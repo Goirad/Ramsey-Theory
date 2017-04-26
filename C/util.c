@@ -3,7 +3,7 @@
 
 int memUsage = 0;
 int memFreed = 0;
-bool debug = FALSE;
+bool debug = false;
 
 /*
   Used to monitor memory usage. Dividing by 1000 instead of 1024
@@ -71,7 +71,7 @@ bool hasK3(Graph * g, Color c){
               getEdgeColor(g, i, k) == c
             ){
               free(numEdges);
-              return TRUE;
+              return true;
             }
           }
         }
@@ -79,7 +79,7 @@ bool hasK3(Graph * g, Color c){
     }
   }
   free(numEdges);
-  return FALSE;
+  return false;
 }
 
 /*
@@ -107,7 +107,7 @@ bool hasK4(Graph * g, Color c){
                   getEdgeColor(g, j, k) == c
                 ){
                   free(numEdges);
-                  return TRUE;
+                  return true;
                 }
               }
             }
@@ -117,7 +117,7 @@ bool hasK4(Graph * g, Color c){
     }
   }
   free(numEdges);
-  return FALSE;
+  return false;
 }
 
 /*
@@ -215,14 +215,14 @@ bool recIsoCheck(Cell *vertsG[], Cell *vertsH[], int depth, Graph * g, Graph * h
         if(getEdgeColor(g, gList[i], gList[j]) != getEdgeColor(h, hList[i], hList[j])){
           free(gList);
           free(hList);
-          return FALSE;
+          return false;
         }
       }
     }
     free(gList);
     free(hList);
 
-    return TRUE;
+    return true;
   }else{
     if(vertsG[depth]->size > 0){
       for(int i = 0; i < fact(vertsG[depth]->size); i++){
@@ -234,9 +234,9 @@ bool recIsoCheck(Cell *vertsG[], Cell *vertsH[], int depth, Graph * g, Graph * h
         copy[depth] = permVertsG;
         bool ans = recIsoCheck(copy, vertsH, depth + 1, g, h);
         freeListArray(copy, g->n);
-        if(ans) return TRUE;
+        if(ans) return true;
       }
-      return FALSE;
+      return false;
     }else{
       return recIsoCheck(vertsG, vertsH, depth + 1, g, h);
     }
@@ -312,7 +312,7 @@ bool isColorIso(Graph * g, Graph * h){
   }else{
     free(charListH);
     free(charListG);
-    return FALSE;
+    return false;
   }
 }
 
@@ -337,7 +337,7 @@ void clean(GraphList * gL){
           Graph * other = getGraph(gL, j);
           if(!other->isNull){
            if(isColorIso(current, other)){
-              other->isNull = TRUE;
+              other->isNull = true;
             }
           }
         }
@@ -361,7 +361,7 @@ void clean(GraphList * gL){
         bool K3 = hasK4(current, RED);
         bool K4 = hasK4(current, GREEN);
         if(K3 | K4){
-          current->isNull = TRUE;
+          current->isNull = true;
         }else{
           *(*cleanedGraphs->graphs + foundGraphs) = *(*gL->graphs + i);
           foundGraphs++;

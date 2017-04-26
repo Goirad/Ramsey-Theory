@@ -3,15 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <malloc.h>
-
-/*
-  Because C can't even have a built in bool. Will
-  soon be replaced with stdbool
-*/
-typedef enum bool {
-  FALSE = 0, TRUE = 1
-} bool;
-
+#include <stdbool.h>
 /*
   A simple linked list, it is currently a big bottleneck so it Will
   be refined or replaced in future versions.

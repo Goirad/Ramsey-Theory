@@ -66,7 +66,7 @@ void printGraphL(Graph * g){
 Graph * createKn(int numVertices) {
   int numEdges = numVertices * (numVertices - 1) / 2;
   Graph * Kn = mallocDB(sizeof(*Kn), "createKn, graph*");
-  Kn->isNull = FALSE;
+  Kn->isNull = false;
   Kn->edges =  mallocDB(numEdges * sizeof *(Kn->edges), "createKn, edges");
   Kn->n = numVertices;
   int edgeCount;
