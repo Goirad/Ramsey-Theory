@@ -85,7 +85,7 @@ GraphList * newGraphList(int numGraphs){
   GraphList * gL = malloc(sizeof *gL);
   gL->size = numGraphs;
   gL->graphs = malloc(sizeof *(gL->graphs));
-  *gL->graphs = calloc(numGraphs, sizeof *(gL->graphs));
+  *gL->graphs = calloc(numGraphs , sizeof *(gL->graphs));
   return gL;
 }
 
@@ -114,7 +114,6 @@ void destroyGraph(Graph * g){
   if(g != NULL){
     if(g->isNull){
       free(g->edges);
-      int n = g->n;
       free(g);
     }else{
       printf("woops tried to free non null graph\n");

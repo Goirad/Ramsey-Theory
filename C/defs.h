@@ -4,16 +4,21 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdbool.h>
+
+
 /*
   A simple linked list, it is currently a big bottleneck so it Will
   be refined or replaced in future versions.
 */
 typedef struct Cell {
   int value;
-  int size;
   struct Cell * next;
 } Cell;
 
+typedef struct List {
+  int length;
+  Cell * first;
+} List;
 /*
   The color of an edge. NONE means no edge.
 */
@@ -58,15 +63,15 @@ typedef struct GraphList {
 
 //function headers
 //list.c
-void freeList(Cell * list);
-void freeListArray(Cell ** listArray, int n);
-void printList(Cell * list);
-void addToList(Cell * list, int val);
-Cell * copyList(Cell * list);
-int getListIndex(Cell * list, int n);
-Cell * getListCellIndex(Cell * list, int n);
-Cell ** copyListArray(Cell *array[], int n);
-Cell * permuteList(Cell * list, Cell * perm);
+void freeList(List * list);
+void freeListArray(List *listArray[], int n);
+void printList(List * list);
+void addToList(List * list, int val);
+List * copyList(List * list);
+int getListIndex(List * list, int n);
+Cell * getListCellIndex(List * list, int n);
+List ** copyListArray(List *array[], int n);
+List * permuteList(List * list,  List * perm);
 
 //graph.c
 int * getCharList(Graph * g, Color c);
@@ -89,13 +94,14 @@ Graph * getGraph(GraphList * gL, int n);
 
 //util.c
 void dumpMallinfo();
+int getMallInfo();
 GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
 bool hasK4(Graph * g, Color c);
 int fact(int n);
-Cell * decToFact(int n, int dig);
-int * collapseVerts(Cell ** verts, int n);
-bool recIsoCheck(Cell *vertsG[], Cell *vertsH[], int depth, Graph * g, Graph * h);
+List * decToFact(int n, int dig);
+int * collapseVerts(List *verts[], int n);
+bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h);
 bool isColorIso(Graph * g, Graph * h);
 void clean(GraphList * gL);
 int run();

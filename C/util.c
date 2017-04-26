@@ -13,7 +13,10 @@ void dumpMallinfo(){
   struct mallinfo m = mallinfo();
   printf("used kbytes = %.3f\n", m.uordblks/1000.0);
 }
-
+int getMallInfo(){
+  struct mallinfo m = mallinfo();
+  return m.uordblks;
+}
 /*
   Creates and returns a list of 2^n graphs, where n is the number of
   vertices in g. Each graph has a different combination of edge colors,
@@ -26,7 +29,9 @@ GraphList * getNextSize(Graph * g){
   for(i = 0; i < pow(2, n); i++){
     Graph * current = copyGraph(g);
     //edges has to be expanded a little. n(n-1)/2 + n = n(n+1)/2
+    //Color * t = current->edges;
     current->edges = realloc(current->edges, (n*(n+1)/2) * sizeof *(current->edges));
+    //free(t);
     current->n += 1;
     int k = i;
     //I use i as a combination of 2 colors.
@@ -36,7 +41,7 @@ GraphList * getNextSize(Graph * g){
       *(current->edges + j) = (k&1) + 1;
       k = k>>1;
     }
-    *(*(out->graphs) + i) = current;
+    setGraph(out, current, i);
   }
   return out;
 }
@@ -133,13 +138,11 @@ int fact(int n){
   n is the number to convert
   dig is the number of digits the answer should have
 */
-Cell * decToFact(int n, int dig){
+List * decToFact(int n, int dig){
   int temp[dig];
   int num = n;
-  Cell * ans = malloc(sizeof *ans);
-  ans->size = 0;
-  ans->next = NULL;
-  ans->value = -1;
+  List * ans = malloc(sizeof *ans);
+  ans->length = 0;
   for(int i = 0; i < dig; i++){
     temp[i] = num % (i+1);
     num /= (i+1);
@@ -148,9 +151,7 @@ Cell * decToFact(int n, int dig){
     addToList(ans, temp[i]);
   }
 
-  Cell * real = ans->next;
-  free(ans);
-  return real;
+  return ans;
 }
 
 
@@ -163,22 +164,22 @@ Cell * decToFact(int n, int dig){
   [1]
   collapses to [2 0 3 1]
 */
-int * collapseVerts(Cell ** verts, int n){
-  int * t = malloc(n * sizeof(int));
+int * collapseVerts(List *verts[], int n){
+  int * result = malloc(n * sizeof(int));
   int found = 0;
   for(int i = 0; i < n; i++){
-    Cell * current = verts[i];
-    if(current->size > 0){
+    Cell * current = verts[i]->first;
+    if(verts[i]->length > 0){
       while(current->next != NULL){
-        t[found] = current->value;
+        result[found] = current->value;
         found++;
         current = current->next;
       }
-      t[found] = current->value;
+      result[found] = current->value;
       found++;
     }
   }
-  return t;
+  return result;
 }
 
 /*
@@ -196,11 +197,12 @@ int * collapseVerts(Cell ** verts, int n){
     If it returns true, clean up and return true.
     If false, check next permutation.
 */
-bool recIsoCheck(Cell *vertsG[], Cell *vertsH[], int depth, Graph * g, Graph * h){
+bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h){
+  //printf("depth = %d / %d\n", depth, g->n-1);
   if(depth >= g->n-1){
     int * gList = collapseVerts(vertsG, g->n);
     int * hList = collapseVerts(vertsH, h->n);
-
+    //printf("collapsed\n");
     for(int i = 0; i < g->n-1; i++){
       for(int j = i + 1; j < g->n; j++){
         if(getEdgeColor(g, gList[i], gList[j]) != getEdgeColor(h, hList[i], hList[j])){
@@ -215,15 +217,20 @@ bool recIsoCheck(Cell *vertsG[], Cell *vertsH[], int depth, Graph * g, Graph * h
 
     return true;
   }else{
-    if(vertsG[depth]->size > 0){
-      for(int i = 0; i < fact(vertsG[depth]->size); i++){
-        Cell * perm = decToFact(i, vertsG[depth]->size);
-        Cell * permVertsG = permuteList(vertsG[depth], perm);
+    if(vertsG[depth]->length > 0){
+      for(int i = 0; i < fact(vertsG[depth]->length); i++){
+
+        List * perm = decToFact(i, vertsG[depth]->length);
+        List * permVertsG = permuteList(vertsG[depth], perm);
+
         freeList(perm);
-        Cell **copy = copyListArray(vertsG, g->n);
+        List ** copy = copyListArray(vertsG, g->n);
+        //printf("copied list\n");
         freeList(copy[depth]);
         copy[depth] = permVertsG;
+        //printf("entering recursively\n");
         bool ans = recIsoCheck(copy, vertsH, depth + 1, g, h);
+        //printf("leaving recursively\n");
         freeListArray(copy, g->n);
         if(ans) return true;
       }
@@ -253,6 +260,7 @@ int cmpfunc (const void * a, const void * b)
   Can be optimized quite a bit
 */
 bool isColorIso(Graph * g, Graph * h){
+  //printf("at start of isColorIso %d\n", getMallInfo());
   int * charListG = getCharList(g, RED);
   int * charListGSorted = getCharList(g, RED);
   int * charListH = getCharList(h, RED);
@@ -261,48 +269,46 @@ bool isColorIso(Graph * g, Graph * h){
   int n = g->n;
   qsort(charListGSorted,n,sizeof(int),cmpfunc);
   qsort(charListHSorted,n,sizeof(int),cmpfunc);
-  Cell * vertsG[n];
-  Cell * vertsH[n];
+
+
   int result = memcmp(charListGSorted, charListHSorted, n*sizeof(int));
   free(charListGSorted);
   free(charListHSorted);
 
   if(result == 0){
-      for(int i = 0; i < n; i++){
-        vertsG[i] = calloc(1, sizeof *vertsG[i]);
-        vertsH[i] = calloc(1, sizeof *vertsH[i]);
-      }
-      for(int i = 0 ; i < n; i++){
-         addToList(vertsG[charListG[i]], i);
-         addToList(vertsH[charListH[i]], i);
-       }
-       //because the first cell is a dummy cell
-       for(int i = 0; i < n; i++){
-         if (vertsG[i]->next != NULL) {
-           Cell * toFree = vertsG[i];
-           vertsG[i] = vertsG[i]->next;
-           free(toFree);
-         }
-         if (vertsH[i]->next != NULL) {
-           Cell * toFree = vertsH[i];
-           vertsH[i] = vertsH[i]->next;
-           free(toFree);
-         }
-      }
+    List **vertsG = malloc(n * sizeof *vertsG);
+    List **vertsH = malloc(n * sizeof *vertsH);
+    //printf("entering if\n");
+    for(int i = 0; i < n; i++){
+      vertsG[i] = malloc(sizeof *vertsG[i]);
+      vertsH[i] = malloc(sizeof *vertsH[i]);
+      vertsG[i]->length = 0;
+      vertsH[i]->length = 0;
+    }
+    for(int i = 0 ; i < n; i++){
+      addToList(vertsG[charListG[i]], i);
+      addToList(vertsH[charListH[i]], i);
+    }
+    //printf("entering\n");
+    //printf("before : ");
+    //dumpMallinfo();
+    bool ans = recIsoCheck(vertsG, vertsH, 0, g, h);
+    //printf("after  : ");
+    //dumpMallinfo();
+    //printf("exiting\n");
+    freeListArray(vertsG, n);
+    freeListArray(vertsH, n);
 
-      bool ans = recIsoCheck(vertsG, vertsH, 0, g, h);
-
-      for(int i = 0; i < n; i++){
-         freeList(vertsG[i]);
-         freeList(vertsH[i]);
-       }
-
-       free(charListH);
-       free(charListG);
-       return ans;
+    ///free(vertsG);
+    //free(vertsH);
+    free(charListH);
+    free(charListG);
+    //printf("at end of isColorIso %d\n", getMallInfo());
+    return ans;
   }else{
     free(charListH);
     free(charListG);
+    //printf("at end of isColorIso %d\n", getMallInfo());
     return false;
   }
 }
@@ -349,7 +355,7 @@ void clean(GraphList * gL){
     while(i < numGraphs){
       Graph * current = getGraph(gL, i);
       if(!current->isNull){
-        bool K3 = hasK4(current, RED);
+        bool K3 = hasK3(current, RED);
         bool K4 = hasK4(current, GREEN);
         if(K3 | K4){
           current->isNull = true;
@@ -361,10 +367,13 @@ void clean(GraphList * gL){
       i++;
     }
     for(i = 0; i < foundGraphs; i++){
+      if((*(*gL->graphs + i))->isNull) destroyGraph(*(*gL->graphs + i));
       *(*gL->graphs + i) = *(*cleanedGraphs->graphs + i);
+
     }
-    shrinkGraphList(gL, foundGraphs);
     destroyGraphList(cleanedGraphs);
+    shrinkGraphList(gL, foundGraphs);
+
  }
 
 /*
@@ -395,7 +404,9 @@ int run(){
       GraphList * gL = getNextSize(getGraph(*(graphTiers + i - 1), j));
       //it helps to clean before merging to keep the sizes low for
       //final row cleaning
+      //printf("done generating next size\n");
       clean(gL);
+      //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
     }
     printf("After generating next size: ");
