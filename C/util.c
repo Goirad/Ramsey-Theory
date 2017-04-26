@@ -15,15 +15,6 @@ void dumpMallinfo(){
 }
 
 /*
-  Ugly malloc wrapper used to debug memory leaks. Will be removed next version.
-*/
-void * mallocDB(int bytes, char* id){
-  memUsage += bytes;
-  if (debug) printf("Trying to allocate %.3f KB of memory at call %s\n", bytes/1000.0, id);
-  return calloc(bytes, sizeof(char));
-}
-
-/*
   Creates and returns a list of 2^n graphs, where n is the number of
   vertices in g. Each graph has a different combination of edge colors,
   which is why there are so many of them.
@@ -383,7 +374,7 @@ void clean(GraphList * gL){
 int run(){
   int tiers = 10;
   //creates an array of graphlists
-  GraphList ** graphTiers = mallocDB(tiers * sizeof(*graphTiers), "run, **graphTiers");
+  GraphList ** graphTiers = malloc(tiers * sizeof(*graphTiers));
 
   printf("Generating First GraphList\n");
   *graphTiers = newGraphList(1);

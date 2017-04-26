@@ -8,7 +8,7 @@
   Remember to free this list when you're done with it!
 */
 int * getCharList(Graph * g, Color c){
-  int * charList = mallocDB(g->n * sizeof *charList, "getCharList");
+  int * charList = malloc(g->n * sizeof *charList);
   int i, j;
   for(i = 0; i < g->n; i++){
     int colorEdges = 0;
@@ -65,9 +65,9 @@ void printGraphL(Graph * g){
 */
 Graph * createKn(int numVertices) {
   int numEdges = numVertices * (numVertices - 1) / 2;
-  Graph * Kn = mallocDB(sizeof(*Kn), "createKn, graph*");
+  Graph * Kn = malloc(sizeof(*Kn));
   Kn->isNull = false;
-  Kn->edges =  mallocDB(numEdges * sizeof *(Kn->edges), "createKn, edges");
+  Kn->edges =  malloc(numEdges * sizeof *(Kn->edges));
   Kn->n = numVertices;
   int edgeCount;
   for (edgeCount = 0; edgeCount < numEdges; edgeCount++) {
@@ -82,10 +82,10 @@ Graph * createKn(int numVertices) {
   numGraphs graphs
 */
 GraphList * newGraphList(int numGraphs){
-  GraphList * gL = mallocDB(sizeof *gL, "newGraphList, *gL");
+  GraphList * gL = malloc(sizeof *gL);
   gL->size = numGraphs;
-  gL->graphs = mallocDB(sizeof *(gL->graphs), "newGraphList, gL->graphs");
-  *gL->graphs = mallocDB(numGraphs * sizeof *(gL->graphs), "newGraphList, *(gL->graphs)");
+  gL->graphs = malloc(sizeof *(gL->graphs));
+  *gL->graphs = calloc(numGraphs, sizeof *(gL->graphs));
   return gL;
 }
 
@@ -95,9 +95,9 @@ GraphList * newGraphList(int numGraphs){
   See destroyGraph
 */
 Graph * copyGraph(Graph * g){
-  Graph * out = mallocDB(sizeof *out, "copyGraph, *out");
+  Graph * out = malloc(sizeof *out);
   int n = g->n;
-  out->edges = mallocDB(n*(n-1)/2 * sizeof *(out->edges), "copyGraph, out->edges");
+  out->edges = malloc(n*(n-1)/2 * sizeof *(out->edges));
   for(int i = 0; i < n*(n-1)/2; i++){
     *(out->edges + i) = *(g->edges + i);
   }
@@ -178,7 +178,7 @@ int numColorEdges (Graph * g, Color c, int vertex) {
 */
 Graph * getSubGraph(Graph * inGraph, Color col){
 
-  Graph * outGraph = mallocDB(sizeof(*outGraph), "getSubGraph, *outGraph");
+  Graph * outGraph = malloc(sizeof(*outGraph));
   int i;
   int n = inGraph->n;
   outGraph->n = n;

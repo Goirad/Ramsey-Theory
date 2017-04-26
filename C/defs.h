@@ -88,7 +88,6 @@ void setGraph(GraphList * gL, Graph * g, int n);
 Graph * getGraph(GraphList * gL, int n);
 
 //util.c
-void * mallocDB(int bytes, char * id);
 void dumpMallinfo();
 GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
