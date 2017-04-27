@@ -115,6 +115,54 @@ bool hasK4(Graph * g, Color c){
   free(numEdges);
   return false;
 }
+/*
+  Pretty much the same as has K3. We could probably even write a recursive one
+  to check for hasKn, but that will have to be investigated later.
+*/
+bool hasK5(Graph * g, Color c){
+  int n = g->n;
+  int * numEdges = getCharList(g, c);
+
+  for(int h = 0; h < n - 4; h++) {
+    if( *(numEdges+h) >= 4) {
+      for(int i = h + 1; i < n - 3; i++){
+        if( *(numEdges+i) >= 4) {
+          for(int j = i + 1; j < n - 2; j++){
+            if( *(numEdges+j) >= 4) {
+              for(int k = j + 1; k < n - 1 ; k++){
+                if(*(numEdges + k) >= 4){
+                  for(int l = k + 1; l < n; l++){
+                    if(
+                      *(numEdges+l) >= 4  &&
+                      getEdgeColor(g, h, i) == c &&
+                      getEdgeColor(g, h, j) == c &&
+                      getEdgeColor(g, h, k) == c &&
+                      getEdgeColor(g, h, l) == c &&
+
+                      getEdgeColor(g, i, j) == c &&
+                      getEdgeColor(g, i, k) == c &&
+                      getEdgeColor(g, i, l) == c &&
+
+                      getEdgeColor(g, j, k) == c &&
+                      getEdgeColor(g, j, l) == c &&
+
+                      getEdgeColor(g, k, l) == c
+                    ){
+                      free(numEdges);
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  free(numEdges);
+  return false;
+}
 
 /*
   Simple iterative factorial function
@@ -138,19 +186,17 @@ int fact(int n){
   n is the number to convert
   dig is the number of digits the answer should have
 */
-List * decToFact(int n, int dig){
+int * decToFact(int n, int dig){
   int temp[dig];
   int num = n;
-  List * ans = malloc(sizeof *ans);
-  ans->length = 0;
+  int * ans = malloc(dig * sizeof *ans);
   for(int i = 0; i < dig; i++){
     temp[i] = num % (i+1);
     num /= (i+1);
   }
-  for(int i = dig-1; i >= 0; i--){
-    addToList(ans, temp[i]);
+  for (int i = 0; i < dig; i++) {
+    ans[i] = temp[dig-1-i];
   }
-
   return ans;
 }
 
@@ -220,10 +266,12 @@ bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h
     if(vertsG[depth]->length > 0){
       for(int i = 0; i < fact(vertsG[depth]->length); i++){
 
-        List * perm = decToFact(i, vertsG[depth]->length);
+        int * perm = decToFact(i, vertsG[depth]->length);
+
+
         List * permVertsG = permuteList(vertsG[depth], perm);
 
-        freeList(perm);
+        free(perm);
         List ** copy = copyListArray(vertsG, g->n);
         //printf("copied list\n");
         freeList(copy[depth]);
@@ -261,9 +309,8 @@ int cmpfunc (const void * a, const void * b)
 */
 bool isColorIso(Graph * g, Graph * h){
   //printf("at start of isColorIso %d\n", getMallInfo());
-  int * charListG = getCharList(g, RED);
+
   int * charListGSorted = getCharList(g, RED);
-  int * charListH = getCharList(h, RED);
   int * charListHSorted = getCharList(h, RED);
 
   int n = g->n;
@@ -276,6 +323,8 @@ bool isColorIso(Graph * g, Graph * h){
   free(charListHSorted);
 
   if(result == 0){
+    int * charListG = getCharList(g, RED);
+    int * charListH = getCharList(h, RED);
     List **vertsG = malloc(n * sizeof *vertsG);
     List **vertsH = malloc(n * sizeof *vertsH);
     //printf("entering if\n");
@@ -306,8 +355,6 @@ bool isColorIso(Graph * g, Graph * h){
     //printf("at end of isColorIso %d\n", getMallInfo());
     return ans;
   }else{
-    free(charListH);
-    free(charListG);
     //printf("at end of isColorIso %d\n", getMallInfo());
     return false;
   }
@@ -321,13 +368,31 @@ bool isColorIso(Graph * g, Graph * h){
 */
 void clean(GraphList * gL){
     int numGraphs = gL->size;
-    int i = 0;
     int foundGraphs = 0;
 
-    GraphList * cleanedGraphs = newGraphList(numGraphs);
+
+    int temp = numGraphs;
+    //Now we have to check there are no red K3s and no green K4s
+    //Honestly its probably more efficient to check this first,
+    //should be tested
+    for(int i = 0; i < numGraphs; i++){
+      Graph * current = getGraph(gL, i);
+      if(!current->isNull){
+        bool K3 = hasK4(current, RED);
+        bool K4 = hasK4(current, GREEN);
+        if(K3 | K4){
+          current->isNull = true;
+          temp--;
+        }
+      }
+      if(gL->size > 1 && i%1 == 0){
+        printf("%3.1f%% done checking for Kns... %d / %d", (i*100.0/gL->size), i, temp);
+        printf("\n\033[F\033[J");
+      }
+    }
     //has to check every graph with every other graph
     //but the first one invalidates a lot of others, so not quite n^2
-    while(i < numGraphs){
+    for(int i = 0; i < numGraphs; i++){
       Graph * current = getGraph(gL, i);
       if(!current->isNull){
         for(int j = numGraphs - 1; j > i; j--){
@@ -335,38 +400,30 @@ void clean(GraphList * gL){
           if(!other->isNull){
            if(isColorIso(current, other)){
               other->isNull = true;
+              temp--;
             }
           }
         }
       }
       //just displays an updating percent because this tends to take the longest
       //time and it's nice to see how it's coming along
-      if(gL->size > 1000 && i%100 == 0){
-        printf("%3d%% done...", (int)(i*100/gL->size));
+      if(gL->size > 1 && i%1 == 0){
+        printf("%3.1f%% done checking color isos... %d / %d", (i*100.0/gL->size), i, temp);
         printf("\n\033[F\033[J");
       }
-      i++;
     }
-    i=0;
+    GraphList * cleanedGraphs = newGraphList(numGraphs);
 
-    //Now we have to check there are no red K3s and no green K4s
-    //Honestly its probably more efficient to check this first,
-    //should be tested
-    while(i < numGraphs){
+    for(int i = 0; i < numGraphs; i++){
       Graph * current = getGraph(gL, i);
       if(!current->isNull){
-        bool K3 = hasK3(current, RED);
-        bool K4 = hasK4(current, GREEN);
-        if(K3 | K4){
-          current->isNull = true;
-        }else{
-          *(*cleanedGraphs->graphs + foundGraphs) = *(*gL->graphs + i);
-          foundGraphs++;
-        }
+        *(*cleanedGraphs->graphs + foundGraphs) = *(*gL->graphs + i);
+        foundGraphs++;
       }
-      i++;
     }
-    for(i = 0; i < foundGraphs; i++){
+
+
+    for(int i = 0; i < foundGraphs; i++){
       if((*(*gL->graphs + i))->isNull) destroyGraph(*(*gL->graphs + i));
       *(*gL->graphs + i) = *(*cleanedGraphs->graphs + i);
 
@@ -381,7 +438,7 @@ void clean(GraphList * gL){
   Returns the smallest int n such that there are no valid colorings of Kn.
 */
 int run(){
-  int tiers = 10;
+  int tiers = 7;
   //creates an array of graphlists
   GraphList ** graphTiers = malloc(tiers * sizeof(*graphTiers));
 
@@ -399,13 +456,15 @@ int run(){
     dumpMallinfo();
     int num = (*(graphTiers + i - 1))->size;
     for(int j = 0; j < num; j++){
-      printf("Generating the next size: %3d%% done...", (int)(j*100/num));
-      printf("\n\033[F\033[J");
+      printf("Generating the next size: %3d%% done... %.3f KB %d graphs", (int)(j*100/num), getMallInfo()/1000.0, (*(graphTiers + i))->size);
+      //printf("\n\033[F\033[J");
       GraphList * gL = getNextSize(getGraph(*(graphTiers + i - 1), j));
       //it helps to clean before merging to keep the sizes low for
       //final row cleaning
       //printf("done generating next size\n");
+      printf("\n");
       clean(gL);
+      printf("\033[F\033[J");
       //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
     }
@@ -426,8 +485,11 @@ int run(){
 
 
 int main(){
-
+  time_t before;
+  time_t after;
+  before = time(NULL);
   run();
-
+  after = time(NULL);
+  printf("That took %d s\n", after - before);
   return 0;
 }

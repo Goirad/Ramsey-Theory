@@ -4,7 +4,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdbool.h>
-
+#include <time.h>
 
 /*
   A simple linked list, it is currently a big bottleneck so it Will
@@ -71,7 +71,7 @@ List * copyList(List * list);
 int getListIndex(List * list, int n);
 Cell * getListCellIndex(List * list, int n);
 List ** copyListArray(List *array[], int n);
-List * permuteList(List * list,  List * perm);
+List * permuteList(List * list,  int * perm);
 
 //graph.c
 int * getCharList(Graph * g, Color c);
@@ -99,7 +99,7 @@ GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
 bool hasK4(Graph * g, Color c);
 int fact(int n);
-List * decToFact(int n, int dig);
+int * decToFact(int n, int dig);
 int * collapseVerts(List *verts[], int n);
 bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h);
 bool isColorIso(Graph * g, Graph * h);

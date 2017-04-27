@@ -142,13 +142,12 @@ Cell * getListCellIndex(List * list, int n){
   return = [1 4 3 0 2]
 */
 
-List * permuteList(List * list, List * perm){
+List * permuteList(List * list, int * perm){
   //printf("entering permute list ------------------\n");
 
   List * result = malloc(sizeof(result));
   result->length = 0;
-  Cell * current = perm->first;
-  int start = getMallInfo();
+  //int start = getMallInfo();
   List * copy = copyList(list);
   //printf("after copy %d\n", getMallInfo() - start);
   //printList(copy);
@@ -157,9 +156,10 @@ List * permuteList(List * list, List * perm){
   //printf("perm : \n");
   //printList(perm);
   //while perm still has a next element
-  while(current->next != NULL){
+  for(int i = 0; i < list->length-1; i++){
+    //printf("checking %d of %d\n", i , list->length);
     //printList(copy);
-    int address = current->value;
+    int address = perm[i];
     //add the element at position address from copy into result
     addToList(result, getListIndex(copy, address));
     //printf("after adding to result %d\n", getMallInfo() - start);
@@ -190,11 +190,10 @@ List * permuteList(List * list, List * perm){
     }
     //go to the next element
     //printf("dunno\n");
-    current = current->next;
   }
   //printList(copy);
   //we hit the last element of perm
-  addToList(result, getListIndex(copy, current->value));
+  addToList(result, getListIndex(copy, perm[list->length - 1]));
   //printf("after adding last %d\n", getMallInfo() - start);
   //printf("copy length %d\n", copy->length);
   //printf("copy is empty %d\n", copy->first->next == NULL);
@@ -203,3 +202,52 @@ List * permuteList(List * list, List * perm){
   //the first element is meaningless, so free and skip it
   return result;
 }
+
+/*
+int * permuteList(List * list, int * perm){
+  int * result = malloc(list->length*sizeof(result));
+
+  List * copy = copyList(list);
+  for(int i = 0; i < list->length-1; i++){
+    int address = perm[i];
+    result[i] = getListIndex(copy, address);
+    //printf("after adding to result %d\n", getMallInfo() - start);
+    //remove it from copy
+    if(address == 0){
+      if(copy->first->next != NULL){
+        Cell * toFree = copy->first;
+        copy->first = copy->first->next;
+        copy->length--;
+        free(toFree);
+        //printf("after freeing first %d\n", getMallInfo() - start);
+      }else{
+        free(copy->first);
+        free(copy);
+        //printf("after freeing first and last %d\n", getMallInfo() - start);
+      }
+    }else if(address == copy->length - 1){
+      free(getListCellIndex(copy, address));
+      //printf("after freeing last %d\n", getMallInfo() - start);
+      getListCellIndex(copy, address-1)->next=NULL;
+      copy->length--;
+    }else{
+      Cell * temp = getListCellIndex(copy, address);
+      getListCellIndex(copy, address-1)->next = getListCellIndex(copy, address+1);
+      free(temp);
+      //printf("after freeing middle %d\n", getMallInfo() - start);
+      copy->length--;
+    }
+    //go to the next element
+    //printf("dunno\n");
+  }
+  //printList(copy);
+  //we hit the last element of perm
+  result[list->length-1] = getListIndex(copy, perm[list->length - 1]);
+  //printf("after adding last %d\n", getMallInfo() - start);
+  //printf("copy length %d\n", copy->length);
+  //printf("copy is empty %d\n", copy->first->next == NULL);
+  freeList(copy);
+  //printf("after the end %d\n", getMallInfo() - start);
+  //the first element is meaningless, so free and skip it
+  return result;
+}*/
