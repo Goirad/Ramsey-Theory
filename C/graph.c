@@ -7,8 +7,8 @@
   not sufficient condition for them to be color isomorphic.
   Remember to free this list when you're done with it!
 */
-int * getCharList(Graph * g, Color c){
-  int * charList = malloc(g->n * sizeof *charList);
+intList * getCharList(Graph * g, Color c){
+  intList * charList = newIntList(g->n);
   int i, j;
   for(i = 0; i < g->n; i++){
     int colorEdges = 0;
@@ -17,7 +17,7 @@ int * getCharList(Graph * g, Color c){
         colorEdges++;
       }
     }
-    *(charList + i) = colorEdges;
+    setIntListIndex(charList, i, colorEdges);
   }
   return charList;
 }

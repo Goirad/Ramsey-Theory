@@ -19,6 +19,16 @@ typedef struct List {
   int length;
   Cell * first;
 } List;
+
+typedef struct intList {
+  int length;
+  int * values;
+} intList;
+
+typedef struct intList2D {
+  int length;
+  intList ** arrays;
+} intList2D;
 /*
   The color of an edge. NONE means no edge.
 */
@@ -63,18 +73,21 @@ typedef struct GraphList {
 
 //function headers
 //list.c
-void freeList(List * list);
-void freeListArray(List *listArray[], int n);
-void printList(List * list);
-void addToList(List * list, int val);
-List * copyList(List * list);
-int getListIndex(List * list, int n);
-Cell * getListCellIndex(List * list, int n);
-List ** copyListArray(List *array[], int n);
-List * permuteList(List * list,  int * perm);
-
+void freeIntList(intList * list);
+void freeIntList2D(intList2D * listArray);
+void printIntList(intList * list);
+void addToIntList(intList * list, int val);
+intList * copyIntList(intList * list);
+int getIntListIndex(intList * list, int n);
+//Cell * getListCellIndex(List * list, int n);
+intList2D * copyIntList2D(intList2D * array);
+intList * permuteList(intList * list,  intList * perm);
+intList * newIntList(int n);
+intList2D * newIntList2D(int n);
+void setIntListIndex(intList * list, int index, int val);
+int getIntListIndex(intList * list, int n);
 //graph.c
-int * getCharList(Graph * g, Color c);
+intList * getCharList(Graph * g, Color c);
 void printGraph(Graph * g);
 void printGraphL(Graph * g);
 Graph * createKn(int numVertices);
@@ -99,9 +112,9 @@ GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
 bool hasK4(Graph * g, Color c);
 int fact(int n);
-int * decToFact(int n, int dig);
-int * collapseVerts(List *verts[], int n);
-bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h);
+intList * decToFact(int n, int dig);
+intList * collapseVerts(intList2D * verts, int n);
+bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h);
 bool isColorIso(Graph * g, Graph * h);
 void clean(GraphList * gL);
 int run();

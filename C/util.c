@@ -1,4 +1,4 @@
-#include "defs.h"
+ #include "defs.h"
 
 
 int memUsage = 0;
@@ -53,20 +53,20 @@ GraphList * getNextSize(Graph * g){
 */
 bool hasK3(Graph * g, Color c){
   int n = g->n;
-  int * numEdges = getCharList(g, c);
+  intList * numEdges = getCharList(g, c);
   //the checks in between help us avoid checking impossible combos
   for(int i = 0; i < n - 2; i++){
-    if( *(numEdges+i) >= 2) {
+    if( getIntListIndex(numEdges, i) >= 2) {
       for(int j = i + 1; j < n - 1; j++){
-        if( *(numEdges+j) >= 2) {
+        if( getIntListIndex(numEdges, j) >= 2) {
           for(int k = j + 1; k < n; k++){
             if(
-              *(numEdges+k) >= 2  &&
+              getIntListIndex(numEdges, k) >= 2  &&
               getEdgeColor(g, i, j) == c &&
               getEdgeColor(g, j, k) == c &&
               getEdgeColor(g, i, k) == c
             ){
-              free(numEdges);
+              freeIntList(numEdges);
               return true;
             }
           }
@@ -74,7 +74,7 @@ bool hasK3(Graph * g, Color c){
       }
     }
   }
-  free(numEdges);
+  freeIntList(numEdges);
   return false;
 }
 
@@ -84,17 +84,17 @@ bool hasK3(Graph * g, Color c){
 */
 bool hasK4(Graph * g, Color c){
   int n = g->n;
-  int * numEdges = getCharList(g, c);
+  intList * numEdges = getCharList(g, c);
 
   for(int h = 0; h < n - 3; h++) {
-    if( *(numEdges+h) >= 3) {
+    if(getIntListIndex(numEdges, h) >= 3) {
       for(int i = h + 1; i < n - 2; i++){
-        if( *(numEdges+i) >= 3) {
+        if(getIntListIndex(numEdges, i) >= 3) {
           for(int j = i + 1; j < n - 1; j++){
-            if( *(numEdges+j) >= 3) {
+            if(getIntListIndex(numEdges, j) >= 3){
               for(int k = j + 1; k < n; k++){
                 if(
-                  *(numEdges+k) >= 3  &&
+                  getIntListIndex(numEdges, k) >= 3  &&
                   getEdgeColor(g, h, i) == c &&
                   getEdgeColor(g, h, j) == c &&
                   getEdgeColor(g, h, k) == c &&
@@ -102,7 +102,7 @@ bool hasK4(Graph * g, Color c){
                   getEdgeColor(g, i, k) == c &&
                   getEdgeColor(g, j, k) == c
                 ){
-                  free(numEdges);
+                  freeIntList(numEdges);
                   return true;
                 }
               }
@@ -112,7 +112,7 @@ bool hasK4(Graph * g, Color c){
       }
     }
   }
-  free(numEdges);
+  freeIntList(numEdges);
   return false;
 }
 /*
@@ -121,19 +121,20 @@ bool hasK4(Graph * g, Color c){
 */
 bool hasK5(Graph * g, Color c){
   int n = g->n;
-  int * numEdges = getCharList(g, c);
-
+  intList * numEdges = getCharList(g, c);
+	//int tested = 0;
   for(int h = 0; h < n - 4; h++) {
-    if( *(numEdges+h) >= 4) {
+    if( getIntListIndex(numEdges, h) >= 4) {
       for(int i = h + 1; i < n - 3; i++){
-        if( *(numEdges+i) >= 4) {
+        if( getIntListIndex(numEdges, i) >= 4) {
           for(int j = i + 1; j < n - 2; j++){
-            if( *(numEdges+j) >= 4) {
+            if( getIntListIndex(numEdges, j) >= 4) {
               for(int k = j + 1; k < n - 1 ; k++){
-                if(*(numEdges + k) >= 4){
+                if(getIntListIndex(numEdges, k) >= 4){
                   for(int l = k + 1; l < n; l++){
+										//tested++;
                     if(
-                      *(numEdges+l) >= 4  &&
+                      getIntListIndex(numEdges, l) >= 4  &&
                       getEdgeColor(g, h, i) == c &&
                       getEdgeColor(g, h, j) == c &&
                       getEdgeColor(g, h, k) == c &&
@@ -148,9 +149,11 @@ bool hasK5(Graph * g, Color c){
 
                       getEdgeColor(g, k, l) == c
                     ){
-                      free(numEdges);
+											//if (n > 10) printf("%d tested\n", tested);
+                      freeIntList(numEdges);
                       return true;
                     }
+										//if (n > 10 && tested > 1000) printf("%d tested\n", tested);
                   }
                 }
               }
@@ -160,7 +163,8 @@ bool hasK5(Graph * g, Color c){
       }
     }
   }
-  free(numEdges);
+  freeIntList(numEdges);
+	//if (n > 10) printf("%d tested\n", tested);
   return false;
 }
 
@@ -186,16 +190,16 @@ int fact(int n){
   n is the number to convert
   dig is the number of digits the answer should have
 */
-int * decToFact(int n, int dig){
+intList * decToFact(int n, int dig){
   int temp[dig];
   int num = n;
-  int * ans = malloc(dig * sizeof *ans);
+  intList * ans = newIntList(dig);
   for(int i = 0; i < dig; i++){
     temp[i] = num % (i+1);
     num /= (i+1);
   }
   for (int i = 0; i < dig; i++) {
-    ans[i] = temp[dig-1-i];
+    setIntListIndex(ans, dig-1-i, temp[i]);
   }
   return ans;
 }
@@ -210,21 +214,22 @@ int * decToFact(int n, int dig){
   [1]
   collapses to [2 0 3 1]
 */
-int * collapseVerts(List *verts[], int n){
-  int * result = malloc(n * sizeof(int));
+intList * collapseVerts(intList2D * verts, int n){
+  intList * result = newIntList(n);
   int found = 0;
+	//printf("collapsing verts\n");
   for(int i = 0; i < n; i++){
-    Cell * current = verts[i]->first;
-    if(verts[i]->length > 0){
-      while(current->next != NULL){
-        result[found] = current->value;
+		//printIntList(verts->arrays[i]);
+    if(verts->arrays[i]->length > 0){
+
+      for(int j = 0; j < verts->arrays[i]->length; j++){
+        setIntListIndex(result, found, getIntListIndex(verts->arrays[i], j));
         found++;
-        current = current->next;
       }
-      result[found] = current->value;
-      found++;
     }
   }
+	//printf("result = ");
+	//printIntList(result);
   return result;
 }
 
@@ -243,43 +248,48 @@ int * collapseVerts(List *verts[], int n){
     If it returns true, clean up and return true.
     If false, check next permutation.
 */
-bool recIsoCheck(List *vertsG[], List *vertsH[], int depth, Graph * g, Graph * h){
+bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h){
   //printf("depth = %d / %d\n", depth, g->n-1);
   if(depth >= g->n-1){
-    int * gList = collapseVerts(vertsG, g->n);
-    int * hList = collapseVerts(vertsH, h->n);
+    intList * gList = collapseVerts(vertsG, g->n);
+    intList * hList = collapseVerts(vertsH, h->n);
     //printf("collapsed\n");
     for(int i = 0; i < g->n-1; i++){
       for(int j = i + 1; j < g->n; j++){
-        if(getEdgeColor(g, gList[i], gList[j]) != getEdgeColor(h, hList[i], hList[j])){
-          free(gList);
-          free(hList);
+				//printGraph(g);
+				//printIntList(gList);
+        if(getEdgeColor(g, getIntListIndex(gList, i), getIntListIndex(gList, j))
+          != getEdgeColor(h, getIntListIndex(hList, i), getIntListIndex(hList, j))){
+          freeIntList(gList);
+          freeIntList(hList);
           return false;
         }
       }
     }
-    free(gList);
-    free(hList);
+    freeIntList(gList);
+    freeIntList(hList);
 
     return true;
   }else{
-    if(vertsG[depth]->length > 0){
-      for(int i = 0; i < fact(vertsG[depth]->length); i++){
+    if(vertsG->arrays[depth]->length > 0){
+      for(int i = 0; i < fact(vertsG->arrays[depth]->length); i++){
 
-        int * perm = decToFact(i, vertsG[depth]->length);
+        intList * perm = decToFact(i, vertsG->arrays[depth]->length);
 
 
-        List * permVertsG = permuteList(vertsG[depth], perm);
+        intList * permVertsG = permuteList(vertsG->arrays[depth], perm);
 
-        free(perm);
-        List ** copy = copyListArray(vertsG, g->n);
+        freeIntList(perm);
+        intList2D * copy = copyIntList2D(vertsG);
         //printf("copied list\n");
-        freeList(copy[depth]);
-        copy[depth] = permVertsG;
+        freeIntList(copy->arrays[depth]);
+        copy->arrays[depth] = permVertsG;
+				//printIntList(permVertsG);
         //printf("entering recursively\n");
+				//printIntList2D(copy);
         bool ans = recIsoCheck(copy, vertsH, depth + 1, g, h);
         //printf("leaving recursively\n");
-        freeListArray(copy, g->n);
+        freeIntList2D(copy);
         if(ans) return true;
       }
       return false;
@@ -310,33 +320,33 @@ int cmpfunc (const void * a, const void * b)
 bool isColorIso(Graph * g, Graph * h){
   //printf("at start of isColorIso %d\n", getMallInfo());
 
-  int * charListGSorted = getCharList(g, RED);
-  int * charListHSorted = getCharList(h, RED);
+  intList * charListGSorted = getCharList(g, RED);
+  intList * charListHSorted = getCharList(h, RED);
 
   int n = g->n;
-  qsort(charListGSorted,n,sizeof(int),cmpfunc);
-  qsort(charListHSorted,n,sizeof(int),cmpfunc);
+  qsort(charListGSorted->values,n,sizeof(int),cmpfunc);
+  qsort(charListHSorted->values,n,sizeof(int),cmpfunc);
 
 
-  int result = memcmp(charListGSorted, charListHSorted, n*sizeof(int));
-  free(charListGSorted);
-  free(charListHSorted);
+  int result = memcmp(charListGSorted->values, charListHSorted->values, n*sizeof(int));
+  freeIntList(charListGSorted);
+  freeIntList(charListHSorted);
 
   if(result == 0){
-    int * charListG = getCharList(g, RED);
-    int * charListH = getCharList(h, RED);
-    List **vertsG = malloc(n * sizeof *vertsG);
-    List **vertsH = malloc(n * sizeof *vertsH);
+    intList * charListG = getCharList(g, RED);
+    intList * charListH = getCharList(h, RED);
+    intList2D * vertsG = newIntList2D(n);
+    intList2D * vertsH = newIntList2D(n);
     //printf("entering if\n");
     for(int i = 0; i < n; i++){
-      vertsG[i] = malloc(sizeof *vertsG[i]);
-      vertsH[i] = malloc(sizeof *vertsH[i]);
-      vertsG[i]->length = 0;
-      vertsH[i]->length = 0;
+      vertsG->arrays[i] = newIntList(0);
+      vertsH->arrays[i] = newIntList(0);
     }
+		//printf("Char List = \n");
+		//printIntList(charListG);
     for(int i = 0 ; i < n; i++){
-      addToList(vertsG[charListG[i]], i);
-      addToList(vertsH[charListH[i]], i);
+      addToIntList(vertsG->arrays[charListG->values[i]], i);
+      addToIntList(vertsH->arrays[charListH->values[i]], i);
     }
     //printf("entering\n");
     //printf("before : ");
@@ -345,13 +355,13 @@ bool isColorIso(Graph * g, Graph * h){
     //printf("after  : ");
     //dumpMallinfo();
     //printf("exiting\n");
-    freeListArray(vertsG, n);
-    freeListArray(vertsH, n);
+    freeIntList2D(vertsG);
+    freeIntList2D(vertsH);
 
     ///free(vertsG);
     //free(vertsH);
-    free(charListH);
-    free(charListG);
+    freeIntList(charListH);
+    freeIntList(charListG);
     //printf("at end of isColorIso %d\n", getMallInfo());
     return ans;
   }else{
@@ -370,26 +380,35 @@ void clean(GraphList * gL){
     int numGraphs = gL->size;
     int foundGraphs = 0;
 
-
+		//printf("starting Kn checking\n");
     int temp = numGraphs;
     //Now we have to check there are no red K3s and no green K4s
     //Honestly its probably more efficient to check this first,
     //should be tested
     for(int i = 0; i < numGraphs; i++){
       Graph * current = getGraph(gL, i);
+			//printGraph(current);
       if(!current->isNull){
+				//printf("checking K3\n");
         bool K3 = hasK4(current, RED);
-        bool K4 = hasK4(current, GREEN);
-        if(K3 | K4){
-          current->isNull = true;
-          temp--;
-        }
+        if(K3){
+	          current->isNull = true;
+	          temp--;
+        }else{
+					//printf("checking K5\n");
+					bool K4 = hasK4(current, GREEN);
+					if(K4){
+	          current->isNull = true;
+	          temp--;
+					}
+				}
       }
       if(gL->size > 1 && i%1 == 0){
         printf("%3.1f%% done checking for Kns... %d / %d", (i*100.0/gL->size), i, temp);
         printf("\n\033[F\033[J");
       }
     }
+		printf("done Kn checking, starting color iso checking\n");
     //has to check every graph with every other graph
     //but the first one invalidates a lot of others, so not quite n^2
     for(int i = 0; i < numGraphs; i++){
@@ -438,7 +457,7 @@ void clean(GraphList * gL){
   Returns the smallest int n such that there are no valid colorings of Kn.
 */
 int run(){
-  int tiers = 7;
+  int tiers = 14;
   //creates an array of graphlists
   GraphList ** graphTiers = malloc(tiers * sizeof(*graphTiers));
 
@@ -464,7 +483,7 @@ int run(){
       //printf("done generating next size\n");
       printf("\n");
       clean(gL);
-      printf("\033[F\033[J");
+      printf("\033[F\033[F\033[J");
       //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
     }
@@ -477,7 +496,11 @@ int run(){
     clean(*(graphTiers + i));
 
     printf("%d has %d graphs cleaned\n",i+1, (*(graphTiers + i))->size);
-
+		printf("Here they are:\n");
+		for(int k = 0; k < (*(graphTiers + i))->size; k++){
+			//printf("%d = \n", k);
+			//printGraph(getGraph(*(graphTiers + i), k));
+		}
     printf("-------------------\n%d : %d\n", i + 1, (*(graphTiers + i))->size);
   }
 }

@@ -1,18 +1,29 @@
 #include "defs.h"
 
+
+
+intList * newIntList(int n){
+  intList * list = malloc(sizeof * list);
+  list->length = n;
+  if(n > 0) {
+	  list->values = malloc(n * sizeof * list->values);
+	}
+	return list;
+}
+
+intList2D * newIntList2D(int n){
+	intList2D * list = malloc(sizeof * list);
+	list->length = n;
+	list->arrays = malloc(n * sizeof * list->arrays);
+	return list;
+
+}
 /*
   Frees a list and all cells in it
 */
-void freeList(List * list){
-  Cell * next;
+void freeIntList(intList * list){
   if(list->length > 0){
-    Cell * current = list->first;
-    while(current->next != NULL){
-      next = current->next;
-      free(current);
-      current = next;
-    }
-    free(current);
+    free(list->values);
   }
   //printf("freed current\n");
   free(list);
@@ -22,10 +33,11 @@ void freeList(List * list){
 /*
   Frees an array of lists with n sublists
 */
-void freeListArray(List *listArray[], int n){
-  for(int i = 0; i < n ; i++){
-    freeList(listArray[i]);
+void freeIntList2D(intList2D * listArray){
+  for(int i = 0; i < listArray->length ; i++){
+    freeIntList(listArray->arrays[i]);
   }
+	free(listArray->arrays);
   free(listArray);
 }
 
@@ -33,36 +45,34 @@ void freeListArray(List *listArray[], int n){
   Prints a list in a single line, with values separated by spaces.
   Useful for debugging.
 */
-void printList(List * list){
-  Cell * current = list->first;
+void printIntList(intList * list){
   printf("[");
-  while(current->next != NULL){
-    printf("%d ", current->value);
-    current = current->next;
-  }
-  printf("%d]\n", current->value );
+	if(list->length > 1){
+	  for(int i = 0; i < list->length - 1; i++){
+	    printf("%d ", list->values[i]);
+	  }
+	  printf("%d]\n", list->values[list->length - 1]);
+	}else if(list->length == 1){
+		printf("%d]\n", list->values[0]);
+	}else{
+		printf("]\n");
+	}
 }
 
 /*
   Adds val to the end of the list provided.
 */
-void addToList(List * list, int val){
-  if(list->length == 0){
-    list->first = malloc(sizeof *list->first);
-    list->first->value = val;
-    list->first->next = NULL;
 
+void addToIntList(intList * list, int val){
+  if(list->length == 0){
+    list->values = malloc(sizeof *list->values);
+    list->values[0] = val;
+    list->length++;
   }else{
-    Cell * current = list->first;
-    while(current->next != NULL){
-      current = current->next;
-    }
-    current->next = malloc(sizeof *current->next);
-    current = current->next;
-    current->next = NULL;
-    current->value = val;
+    list->values = realloc(list->values, (list->length + 1) * sizeof *list->values);
+    list->values[list->length] = val;
+    list->length++;
   }
-  list->length++;
 }
 
 /*
@@ -70,20 +80,15 @@ void addToList(List * list, int val){
   a list without destroying the original.
   Allocates dynamic memory, so remember to free it when you're done.
 */
-List * copyList(List * list){
-  List * copy = malloc(sizeof * copy);
+intList * copyIntList(intList * list){
+  intList * copy = malloc(sizeof * copy);
   copy->length = 0;
-
 
   //if list has stuff, copy them
   if(list->length > 0){
-    Cell * current = list->first;
-    //copy->first = malloc(sizeof *copy->first);
-    while(current->next != NULL){
-      addToList(copy, current->value);
-      current = current->next;
-    }
-    addToList(copy, current->value);
+		copy->length = list->length;
+    copy->values = malloc(list->length * sizeof * copy->values);
+    memcpy(copy->values, list->values, list->length * sizeof * list->values);
     return copy;
   }else{
     return copy;
@@ -93,13 +98,11 @@ List * copyList(List * list){
 /*
   Creates a deep copy of an array of n lists.
 */
-List ** copyListArray(List *array[], int n){
-  List **result = malloc(n * sizeof *result);
-  for(int i = 0; i < n; i++){
-    //printf("copying %d\n", i);
-    //result[i] = malloc(sizeof array[i]);
-    //printf("calloced\n");
-    result[i] = copyList(array[i]);
+intList2D * copyIntList2D(intList2D * array){
+  intList2D * result = newIntList2D(array->length);
+	result->length = array->length;
+  for(int i = 0; i < array->length; i++){
+    result->arrays[i] = copyIntList(array->arrays[i]);
   }
   return result;
 }
@@ -108,29 +111,41 @@ List ** copyListArray(List *array[], int n){
 /*
   Returns the nth element of the list.
 */
-int getListIndex(List * list, int n){
-  Cell * current = list->first;
-  int i = 0;
-  while(i != n){
-    current = current->next;
-    i++;
-  }
-  return current->value;
+int getIntListIndex(intList * list, int n){
+	if(n > list->length){
+		printf("Out of bounds error: %d / %d\n", n, list->length);
+	}else{
+  	return list->values[n];
+	}
+}
+void setIntListIndex(intList * list, int index, int n){
+	//printf("setting %d out of %d\n", index, list->length);
+  list->values[index] = n;
 }
 
-/*
-  Returns a pointer to the nth cell of the list.
-*/
-Cell * getListCellIndex(List * list, int n){
-  Cell * current = list->first;
-  int i = 0;
-  while(i != n){
-    current = current->next;
-    i++;
+
+void setNthNonNegValue(intList * list, int n, int value){
+  int found = -1;
+  for(int i = 0; i < list->length; i++){
+
+    if(getIntListIndex(list, i) >= 0) found++;
+    if(found == n) {
+      setIntListIndex(list, i, value);
+      return;
+    }
   }
-  return current;
 }
 
+int getNthNonNegValue(intList * list, int n){
+  int found = -1;
+  for(int i = 0; i < list->length; i++){
+
+    if(getIntListIndex(list, i) >= 0) found++;
+    if(found == n) {
+      return getIntListIndex(list, i);
+    }
+  }
+}
 
 /*
   This takes a permutation list perm and applies it to list,
@@ -142,112 +157,31 @@ Cell * getListCellIndex(List * list, int n){
   return = [1 4 3 0 2]
 */
 
-List * permuteList(List * list, int * perm){
-  //printf("entering permute list ------------------\n");
+intList * permuteList(intList * list, intList * perm){
+	//printf("original - ");
+	//printIntList(list);
+	//printf("perm - ");
+	//printIntList(perm);
+  intList * result = newIntList(list->length);
 
-  List * result = malloc(sizeof(result));
-  result->length = 0;
-  //int start = getMallInfo();
-  List * copy = copyList(list);
-  //printf("after copy %d\n", getMallInfo() - start);
-  //printList(copy);
-  //printf(" : permed with : ");
-  //printList(perm);
-  //printf("perm : \n");
-  //printList(perm);
-  //while perm still has a next element
-  for(int i = 0; i < list->length-1; i++){
-    //printf("checking %d of %d\n", i , list->length);
-    //printList(copy);
-    int address = perm[i];
-    //add the element at position address from copy into result
-    addToList(result, getListIndex(copy, address));
+  intList * copy = copyIntList(list);
+	//WHY WAS IT LENGTH - 1?? ******************************************************************
+  for(int i = 0; i < list->length; i++){
+    int address = getIntListIndex(perm, i);
+    setIntListIndex(result, i, getNthNonNegValue(copy, address));
     //printf("after adding to result %d\n", getMallInfo() - start);
     //remove it from copy
-    if(address == 0){
-      if(copy->first->next != NULL){
-        Cell * toFree = copy->first;
-        copy->first = copy->first->next;
-        copy->length--;
-        free(toFree);
-        //printf("after freeing first %d\n", getMallInfo() - start);
-      }else{
-        free(copy->first);
-        free(copy);
-        //printf("after freeing first and last %d\n", getMallInfo() - start);
-      }
-    }else if(address == copy->length - 1){
-      free(getListCellIndex(copy, address));
-      //printf("after freeing last %d\n", getMallInfo() - start);
-      getListCellIndex(copy, address-1)->next=NULL;
-      copy->length--;
-    }else{
-      Cell * temp = getListCellIndex(copy, address);
-      getListCellIndex(copy, address-1)->next = getListCellIndex(copy, address+1);
-      free(temp);
-      //printf("after freeing middle %d\n", getMallInfo() - start);
-      copy->length--;
-    }
+    setNthNonNegValue(copy, address, -1);
     //go to the next element
     //printf("dunno\n");
   }
-  //printList(copy);
-  //we hit the last element of perm
-  addToList(result, getListIndex(copy, perm[list->length - 1]));
   //printf("after adding last %d\n", getMallInfo() - start);
   //printf("copy length %d\n", copy->length);
   //printf("copy is empty %d\n", copy->first->next == NULL);
-  freeList(copy);
+  freeIntList(copy);
   //printf("after the end %d\n", getMallInfo() - start);
   //the first element is meaningless, so free and skip it
+	//printf("permutation - ");
+	//printIntList(result);
   return result;
 }
-
-/*
-int * permuteList(List * list, int * perm){
-  int * result = malloc(list->length*sizeof(result));
-
-  List * copy = copyList(list);
-  for(int i = 0; i < list->length-1; i++){
-    int address = perm[i];
-    result[i] = getListIndex(copy, address);
-    //printf("after adding to result %d\n", getMallInfo() - start);
-    //remove it from copy
-    if(address == 0){
-      if(copy->first->next != NULL){
-        Cell * toFree = copy->first;
-        copy->first = copy->first->next;
-        copy->length--;
-        free(toFree);
-        //printf("after freeing first %d\n", getMallInfo() - start);
-      }else{
-        free(copy->first);
-        free(copy);
-        //printf("after freeing first and last %d\n", getMallInfo() - start);
-      }
-    }else if(address == copy->length - 1){
-      free(getListCellIndex(copy, address));
-      //printf("after freeing last %d\n", getMallInfo() - start);
-      getListCellIndex(copy, address-1)->next=NULL;
-      copy->length--;
-    }else{
-      Cell * temp = getListCellIndex(copy, address);
-      getListCellIndex(copy, address-1)->next = getListCellIndex(copy, address+1);
-      free(temp);
-      //printf("after freeing middle %d\n", getMallInfo() - start);
-      copy->length--;
-    }
-    //go to the next element
-    //printf("dunno\n");
-  }
-  //printList(copy);
-  //we hit the last element of perm
-  result[list->length-1] = getListIndex(copy, perm[list->length - 1]);
-  //printf("after adding last %d\n", getMallInfo() - start);
-  //printf("copy length %d\n", copy->length);
-  //printf("copy is empty %d\n", copy->first->next == NULL);
-  freeList(copy);
-  //printf("after the end %d\n", getMallInfo() - start);
-  //the first element is meaningless, so free and skip it
-  return result;
-}*/
