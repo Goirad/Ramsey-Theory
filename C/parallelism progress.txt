@@ -1,0 +1,47 @@
+without any parallelism:
+	49 s
+	49 s
+	50 s
+
+1 thread for each call to isColorIso, run serially:
+	221 s but work load is spread over all cores
+	237 s
+
+1 thread for every call to iscoloriso for a particular current graph, run concurrently:
+	249 s
+
+
+1 thread
+	55 s
+
+2 threads
+	35 s
+	35 s
+	29 s @ 4.4 GHz
+
+3 threads
+	21 s @ 4.4 GHz
+4 threads at a time, one for each raw graph
+	44 s
+	42 s
+	40 s
+	37 s
+
+	21 s at 4.4 GHz
+5 threads
+	20 s at 4.4
+4 threads 26
+
+10 threads at a time
+	 24 s
+	 24 s
+	 19 s at 4.4 GHz
+	 20 s at 4.4 GHz
+
+16 threads 20 s
+
+25 threads
+	26 s
+
+100 threads
+	35 s

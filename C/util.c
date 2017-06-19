@@ -370,6 +370,25 @@ bool isColorIso(Graph * g, Graph * h){
   }
 }
 
+void * isColorIsoThread(void * args){
+	isColorIsoThreadArgs * args1 = (isColorIsoThreadArgs *) args;
+	Graph * current = args1->current;
+	for(int j = args1->numGraphs - 1; j > args1->i; j--){
+			//printf("Checking %d vs %d\n", i, j);
+			Graph * other = getGraph(args1->gL, j);
+			//if (current->isNull) break;
+			if (!other->isNull){
+				//printGraph(args.current);
+				if(isColorIso(current, other)){
+					 other->isNull = true;
+					 (*args1->temp)--;
+				}
+			}
+	}
+	free(args);
+	(*args1->numActive)--;
+}
+
 /*
   Accepts a graphList and modifies it so that it contains only one
   representative of each color isomorphism class remains. In other words, no
@@ -390,47 +409,61 @@ void clean(GraphList * gL){
 			//printGraph(current);
       if(!current->isNull){
 				//printf("checking K3\n");
-        bool K3 = hasK4(current, RED);
+        bool K3 = hasK3(current, RED);
         if(K3){
 	          current->isNull = true;
 	          temp--;
         }else{
 					//printf("checking K5\n");
-					bool K4 = hasK4(current, GREEN);
+					bool K4 = hasK5(current, GREEN);
 					if(K4){
 	          current->isNull = true;
 	          temp--;
 					}
 				}
       }
-      if(gL->size > 1 && i%1 == 0){
+      if(gL->size > 5000 && i%100 == 0){
         printf("%3.1f%% done checking for Kns... %d / %d", (i*100.0/gL->size), i, temp);
         printf("\n\033[F\033[J");
       }
     }
-		printf("done Kn checking, starting color iso checking\n");
+		//printf("done Kn checking, starting color iso checking %d\n", numGraphs);
     //has to check every graph with every other graph
     //but the first one invalidates a lot of others, so not quite n^2
-    for(int i = 0; i < numGraphs; i++){
-      Graph * current = getGraph(gL, i);
-      if(!current->isNull){
-        for(int j = numGraphs - 1; j > i; j--){
-          Graph * other = getGraph(gL, j);
-          if(!other->isNull){
-           if(isColorIso(current, other)){
-              other->isNull = true;
-              temp--;
-            }
-          }
-        }
-      }
-      //just displays an updating percent because this tends to take the longest
-      //time and it's nice to see how it's coming along
-      if(gL->size > 1 && i%1 == 0){
-        printf("%3.1f%% done checking color isos... %d / %d", (i*100.0/gL->size), i, temp);
+
+		pthread_t pids[numGraphs];
+		int threads = 0;
+		int activeIndex = 0;
+		int numActive = 0;
+		int i = 0;
+    while(i < numGraphs){
+			if (numActive < 8){
+
+	      Graph * current = getGraph(gL, i);
+	      if(!current->isNull){
+					isColorIsoThreadArgs * args = malloc(sizeof * args);
+					args->current = current;
+					args->temp = &temp;
+					args->numGraphs = numGraphs;
+					args->gL = gL;
+					args->i = i;
+					args->numActive = &numActive;
+					numActive++;
+					pthread_create(&pids[threads], NULL, isColorIsoThread, args);
+					threads++;
+				}
+				i++;
+			}
+			if(gL->size > 1000 && i%40 == 0){
+        printf("%3.1f%% done checking color isos... %d / %d %d active", (i*100.0/gL->size), i, temp, numActive);
         printf("\n\033[F\033[J");
       }
     }
+
+		for (int k = 0; k < threads; k++){
+			void * status;
+			pthread_join(pids[k], &status);
+		}
     GraphList * cleanedGraphs = newGraphList(numGraphs);
 
     for(int i = 0; i < numGraphs; i++){
@@ -483,7 +516,7 @@ int run(){
       //printf("done generating next size\n");
       printf("\n");
       clean(gL);
-      printf("\033[F\033[F\033[J");
+      printf("\033[F\033[J");
       //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
     }
@@ -496,11 +529,7 @@ int run(){
     clean(*(graphTiers + i));
 
     printf("%d has %d graphs cleaned\n",i+1, (*(graphTiers + i))->size);
-		printf("Here they are:\n");
-		for(int k = 0; k < (*(graphTiers + i))->size; k++){
-			//printf("%d = \n", k);
-			//printGraph(getGraph(*(graphTiers + i), k));
-		}
+
     printf("-------------------\n%d : %d\n", i + 1, (*(graphTiers + i))->size);
   }
 }

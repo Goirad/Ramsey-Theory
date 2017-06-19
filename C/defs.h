@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <stdbool.h>
 #include <time.h>
+#include <pthread.h>
 
 /*
   A simple linked list, it is currently a big bottleneck so it Will
@@ -36,6 +37,7 @@ typedef enum Color {
   NONE = 0, RED = 1, GREEN = 2
 } Color;
 
+
 /*
   Stores some data about a graph. n is the number of vertices.
   edges is an array that actually represents the graph.
@@ -55,6 +57,7 @@ typedef struct Graph {
   bool isNull;
 } Graph;
 
+
 /*
   Stores an array of graph pointers
   Future:
@@ -69,7 +72,14 @@ typedef struct GraphList {
   Graph *** graphs;
 } GraphList;
 
-
+typedef struct isColorIsoThreadArgs {
+	Graph * current;
+	int * temp;
+	int numGraphs;
+	GraphList * gL;
+	int i;
+	int * numActive;
+} isColorIsoThreadArgs;
 
 //function headers
 //list.c
