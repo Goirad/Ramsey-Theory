@@ -57,6 +57,12 @@ typedef struct Graph {
   bool isNull;
 } Graph;
 
+typedef struct cmdLineArgs {
+  int n;
+  int m;
+  int maxIters;
+  int maxThreads;
+} cmdLineArgs;
 
 /*
   Stores an array of graph pointers
@@ -126,6 +132,9 @@ intList * decToFact(int n, int dig);
 intList * collapseVerts(intList2D * verts, int n);
 bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h);
 bool isColorIso(Graph * g, Graph * h);
-void clean(GraphList * gL);
-int run();
+void clean(GraphList * gL, int n, int m, int maxThreads);
+int run(cmdLineArgs args);
 int cmpfunc(const void * a, const void * b);
+
+//cmdline.c
+cmdLineArgs processArgs(int argc, char **argv);

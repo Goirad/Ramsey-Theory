@@ -395,7 +395,8 @@ void * isColorIsoThread(void * args){
   duplicates. It also filters out any invalid graphs, which are
   graphs that have either a red K3 or a green K4.
 */
-void clean(GraphList * gL){
+void clean(GraphList * gL, int n, int m, int maxThreads){
+    //printf("n = %d, m = %d\n", n, m);
     int numGraphs = gL->size;
     int foundGraphs = 0;
 
@@ -409,14 +410,30 @@ void clean(GraphList * gL){
 			//printGraph(current);
       if(!current->isNull){
 				//printf("checking K3\n");
-        bool K3 = hasK3(current, RED);
-        if(K3){
+        bool Kn;
+        if (n == 3) {
+          Kn = hasK3(current, RED);
+        }else if(n == 4){
+          Kn = hasK4(current, RED);
+        }else if(n == 5){
+          Kn = hasK5(current, RED);
+        }
+
+
+        if(Kn){
 	          current->isNull = true;
 	          temp--;
         }else{
 					//printf("checking K5\n");
-					bool K4 = hasK5(current, GREEN);
-					if(K4){
+					bool Km;
+          if (m == 3) {
+            Km = hasK3(current, GREEN);
+          }else if(m == 4){
+            Km = hasK4(current, GREEN);
+          }else if(m == 5){
+            Km = hasK5(current, GREEN);
+          }
+					if(Km){
 	          current->isNull = true;
 	          temp--;
 					}
@@ -437,7 +454,7 @@ void clean(GraphList * gL){
 		int numActive = 0;
 		int i = 0;
     while(i < numGraphs){
-			if (numActive < 8){
+			if (numActive < maxThreads){
 
 	      Graph * current = getGraph(gL, i);
 	      if(!current->isNull){
@@ -489,8 +506,8 @@ void clean(GraphList * gL){
   Implements the bulk of the algorithm as described in the project proposal.
   Returns the smallest int n such that there are no valid colorings of Kn.
 */
-int run(){
-  int tiers = 14;
+int run(cmdLineArgs args){
+  int tiers = args.maxIters;
   //creates an array of graphlists
   GraphList ** graphTiers = malloc(tiers * sizeof(*graphTiers));
 
@@ -515,7 +532,7 @@ int run(){
       //final row cleaning
       //printf("done generating next size\n");
       printf("\n");
-      clean(gL);
+      clean(gL, args.n, args.m, args.maxThreads);
       printf("\033[F\033[J");
       //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
@@ -526,7 +543,7 @@ int run(){
     printf("%d has %d graphs raw\n", i+1, (*(graphTiers + i))->size);
     printf("Cleaning this set up...\n");
 
-    clean(*(graphTiers + i));
+    clean(*(graphTiers + i), args.n, args.m, args.maxThreads);
 
     printf("%d has %d graphs cleaned\n",i+1, (*(graphTiers + i))->size);
 
@@ -536,11 +553,13 @@ int run(){
 
 
 
-int main(){
+int main(int argc, char **argv){
+  cmdLineArgs args = processArgs(argc, argv);
+
   time_t before;
   time_t after;
   before = time(NULL);
-  run();
+  run(args);
   after = time(NULL);
   printf("That took %d s\n", after - before);
   return 0;
