@@ -84,6 +84,7 @@ Graph * createKn(int numVertices) {
 GraphList * newGraphList(int numGraphs){
   GraphList * gL = malloc(sizeof *gL);
   gL->size = numGraphs;
+  gL->activeIndex = 0;
   gL->graphs = malloc(sizeof *(gL->graphs));
   *gL->graphs = calloc(numGraphs , sizeof *(gL->graphs));
   return gL;
@@ -138,6 +139,10 @@ Color getEdgeColor(Graph * g, int n, int m){
   }
 }
 
+
+Color getEdgeColorRaw(Graph * g, int n){
+  return *(g->edges + n);
+}
 /*
   Sets the color of the edge between vertices m and n in g to color c
 */
@@ -192,6 +197,27 @@ Graph * getSubGraph(Graph * inGraph, Color col){
   }
   return outGraph;
 }
+
+void clearGraphList(GraphList * gL){
+  GraphList * cleanedGraphs = newGraphList(gL->size);
+  int foundGraphs = 0;
+  for(int i = 0; i < gL->size; i++){
+    Graph * current = getGraph(gL, i);
+    if(!current->isNull){
+      *(*cleanedGraphs->graphs + foundGraphs) = *(*gL->graphs + i);
+      foundGraphs++;
+    }
+  }
+
+  for(int i = 0; i < foundGraphs; i++){
+    if((*(*gL->graphs + i))->isNull) destroyGraph(*(*gL->graphs + i));
+    *(*gL->graphs + i) = *(*cleanedGraphs->graphs + i);
+
+  }
+  destroyGraphList(cleanedGraphs);
+  shrinkGraphList(gL, foundGraphs);
+}
+
 
 /*
   Takes a graph list that only has a few non null graphs at the start
@@ -256,4 +282,15 @@ void setGraph(GraphList * gL, Graph * g, int n){
 */
 Graph * getGraph(GraphList * gL, int n){
   return *(*gL->graphs + n);
+}
+
+Graph * newGraph(int n, char * raw){
+  Graph * g = malloc(sizeof * g);
+  g->edges = malloc(n*(n-1)/2 * sizeof *(g->edges));
+  g->n = n;
+  g->isNull = false;
+  for(int i = 0; i < strlen(raw) - 1; i++){
+    g->edges[i] = raw[i] - '0';
+  }
+  return g;
 }

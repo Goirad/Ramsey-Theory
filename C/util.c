@@ -381,12 +381,79 @@ void * isColorIsoThread(void * args){
 				//printGraph(args.current);
 				if(isColorIso(current, other)){
 					 other->isNull = true;
+
 					 (*args1->temp)--;
 				}
 			}
 	}
 	free(args);
 	(*args1->numActive)--;
+  //printf("just finished %d\n", (args1->i));
+}
+
+
+
+/*
+while i < numGraphs {
+  while j < blocksize {
+    if active < threadMax {
+      spawn thread
+      j++
+      i++
+    }
+  }
+  join to all threads in block
+  shrink the graph list
+  graphs already checked push to file, make null
+  gL = shrunk graph list
+}
+
+*/
+
+
+void cleanKns(GraphList * gL, int n, int m, int * tempGraphs, bool isMajor){
+  int numGraphs = gL->size;
+  for(int i = 0; i < numGraphs; i++){
+    Graph * current = getGraph(gL, i);
+    //printGraph(current);
+    if(!current->isNull){
+      //printf("checking K3\n");
+      bool Kn;
+      if (n == 3) {
+        Kn = hasK3(current, RED);
+      }else if(n == 4){
+        Kn = hasK4(current, RED);
+      }else if(n == 5){
+        Kn = hasK5(current, RED);
+      }
+
+
+      if(Kn){
+          current->isNull = true;
+          (*tempGraphs)--;
+      }else{
+        //printf("checking K5\n");
+        bool Km;
+        if (m == 3) {
+          Km = hasK3(current, GREEN);
+        }else if(m == 4){
+          Km = hasK4(current, GREEN);
+        }else if(m == 5){
+          Km = hasK5(current, GREEN);
+        }
+        if(Km){
+          current->isNull = true;
+          (*tempGraphs)--;
+        }
+      }
+    }
+    if(gL->size > 5000 && i%100 == 0){
+      printf("%3.1f%% done checking for Kns... %d / %d", (i*100.0/gL->size), i, *tempGraphs);
+      printf("\n\033[F\033[J");
+    }
+  }
+  clearGraphList(gL);
+  if (isMajor) dumpGraphList(gL, n, m, true);
 }
 
 /*
@@ -395,6 +462,128 @@ void * isColorIsoThread(void * args){
   duplicates. It also filters out any invalid graphs, which are
   graphs that have either a red K3 or a green K4.
 */
+void clean(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
+    //printf("n = %d, m = %d\n", n, m);
+    int originalSize = gL->size;
+    int numGraphs = gL->size;
+    int foundGraphs = 0;
+		//printf("starting Kn checking\n");
+    int tempGraphs = numGraphs;
+    if(!isMajor) {
+      //printf("Set has %d raw\n", numGraphs);
+      cleanKns(gL, n, m, &tempGraphs, isMajor);
+      numGraphs = gL->size;
+      //printf("Set has %d cleaned Kns\n", numGraphs);
+    }
+
+    //has to check every graph with every other graph
+    //but the first one invalidates a lot of others, so not quite n^2
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 10000000L;
+    nanosleep(&ts, NULL);
+    //printf("Starting on color Isos...\n");
+		int blockSize = 100;
+
+		int activeIndex = gL->activeIndex;
+    int blockID = 0;
+		int i = gL->activeIndex;
+    //printf("Entering main loop %d\n", numGraphs);
+    while(i < numGraphs){
+      //printf("blockID = %d, i = %d, numGraphs = %d\n", blockID, i,gL->size);
+      blockID++;
+      int j = 0;
+      int threads = 0;
+      int numActive = 0;
+      pthread_t pids[blockSize];
+      //printf("entering sub loop %d %d %d\n", i, maxThreads, numGraphs);
+      while (j < blockSize && i < numGraphs){
+        //printf("%d < %d && %d < %d\n", j, blockSize, i, numGraphs);
+        //printf("i = %d\n", i);
+        if (isMajor) nanosleep(&ts, NULL);
+  			if (numActive < maxThreads){
+
+          //printf("checking active threads %d %d %d %d\n", numActive, i, j, threads);
+  	      Graph * current = getGraph(gL, i);
+  	      if(!current->isNull){
+  					isColorIsoThreadArgs * args = malloc(sizeof * args);
+  					args->current = current;
+  					args->temp = &tempGraphs;
+  					args->numGraphs = numGraphs;
+  					args->gL = gL;
+  					args->i = i;
+  					args->numActive = &numActive;
+  					numActive++;
+  					pthread_create(&pids[threads], NULL, isColorIsoThread, args);
+  					threads++;
+  				}
+          i++;
+          j++;
+          if (j % 1 == 0) {
+            printf("%3.1f%% done with block %d / %d", (100.0 * j) / blockSize, blockID, numGraphs / blockSize + 1);
+            printf("\n\033[F\033[J");
+          }
+  			}
+
+      }
+      //printf("done with loop\n");
+      for (int k = 0; k < blockSize && k < threads; k++){
+        //printf("%d\n", k);
+  			void * status;
+  			pthread_join(pids[k], &status);
+  		}
+      //printf("done joining\n");
+      int found = 0;
+
+      for(int l = activeIndex; l < activeIndex + blockSize && l < numGraphs ; l++){
+        Graph * g = getGraph(gL, l);
+        if (! g->isNull){
+          found++;
+        }
+      }
+      //printf("done finding %d\n", found);
+      GraphList * temp = newGraphList(found);
+      found = 0;
+      for(int l = activeIndex; l < activeIndex + blockSize && l < numGraphs; l++){
+        Graph * g = getGraph(gL, l);
+
+        if (! g->isNull){
+
+          setGraph(temp, g, found);
+          found++;
+
+        }
+      }
+      //  printf("done copying %d\n", found);
+      //if (isMajor) dumpAppendGraphList(temp, n, m, false, blockID);
+      /*for(int l = 0; l < blockSize && l < numGraphs; l++){
+        Graph * g = getGraph(gL, l);
+        g->isNull = true;
+      }*/
+      //printf("a\n");
+      destroyGraphList(temp);
+      //printf("b\n");
+      clearGraphList(gL);
+      numGraphs = gL->size;
+      activeIndex +=  found;
+      gL->activeIndex = activeIndex;
+      i = activeIndex;
+      //printf("c\n");
+      if (isMajor) dumpGraphList(gL, n, m, true);
+      //printf("d\n");
+			if(gL->size > 100){
+        //printf("\033[F\033[J");
+        printf("%3.1f%% done checking color isos... %d / %d %d active", (100.0 * blockID / (originalSize * 1.0 / blockSize)), blockID, originalSize / blockSize + 1, numActive);
+        printf("\n\033[F\033[J");
+      }
+    }
+
+    clearGraphList(gL);
+
+ }
+
+/*
+
 void clean(GraphList * gL, int n, int m, int maxThreads){
     //printf("n = %d, m = %d\n", n, m);
     int numGraphs = gL->size;
@@ -453,6 +642,7 @@ void clean(GraphList * gL, int n, int m, int maxThreads){
 		int activeIndex = 0;
 		int numActive = 0;
 		int i = 0;
+    int found = 0;
     while(i < numGraphs){
 			if (numActive < maxThreads){
 
@@ -471,36 +661,20 @@ void clean(GraphList * gL, int n, int m, int maxThreads){
 				}
 				i++;
 			}
-			if(gL->size > 1000 && i%40 == 0){
+			if(gL->size > 100 && i%10 == 0){
         printf("%3.1f%% done checking color isos... %d / %d %d active", (i*100.0/gL->size), i, temp, numActive);
         printf("\n\033[F\033[J");
       }
     }
-
 		for (int k = 0; k < threads; k++){
 			void * status;
 			pthread_join(pids[k], &status);
 		}
-    GraphList * cleanedGraphs = newGraphList(numGraphs);
-
-    for(int i = 0; i < numGraphs; i++){
-      Graph * current = getGraph(gL, i);
-      if(!current->isNull){
-        *(*cleanedGraphs->graphs + foundGraphs) = *(*gL->graphs + i);
-        foundGraphs++;
-      }
-    }
-
-
-    for(int i = 0; i < foundGraphs; i++){
-      if((*(*gL->graphs + i))->isNull) destroyGraph(*(*gL->graphs + i));
-      *(*gL->graphs + i) = *(*cleanedGraphs->graphs + i);
-
-    }
-    destroyGraphList(cleanedGraphs);
-    shrinkGraphList(gL, foundGraphs);
+    clearGraphList(gL);
 
  }
+*/
+
 
 /*
   Implements the bulk of the algorithm as described in the project proposal.
@@ -508,49 +682,73 @@ void clean(GraphList * gL, int n, int m, int maxThreads){
 */
 int run(cmdLineArgs args){
   int tiers = args.maxIters;
+  int i = 0;
+  tier * bestFound = findLatest(args.n, args.m);
   //creates an array of graphlists
   GraphList ** graphTiers = malloc(tiers * sizeof(*graphTiers));
 
-  printf("Generating First GraphList\n");
-  *graphTiers = newGraphList(1);
-  printf("Generating K1\n");
-  **((*graphTiers)->graphs) = createKn(1);
+  if (bestFound->tier > 2){
+    *(graphTiers + bestFound->tier - 1) = bestFound->gL;
+    i = bestFound->tier;
+  }else{
+    printf("Generating First GraphList\n");
+    *graphTiers = newGraphList(1);
+    printf("Generating K1\n");
+    **((*graphTiers)->graphs) = createKn(1);
+    i = 1;
+  }
 
-  printf("starting mem usage:\n");
-  dumpMallinfo;
-  for(int i = 1; i < tiers; i++){
+  //printf("size = %d\n", (*(graphTiers + bestFound->tier - 1))->size);
+  printf("starting mem usage:");
+  dumpMallinfo();
+
+  if (bestFound->isRaw) {
+    printf("Cleaning existing graphs %d\n", bestFound->gL->size);
+    clean(*(graphTiers + bestFound->tier - 1), args.n, args.m, args.maxThreads, true);
+    printf("Done cleaning existing graphs %d left\n", bestFound->gL->size);
+  }
+
+  for(i; i < tiers; i++){
     printf("Starting row %d\n", i + 1);
     *(graphTiers + i) = newGraphList(0);
     printf("Before generating next size: ");
     dumpMallinfo();
+
     int num = (*(graphTiers + i - 1))->size;
+
+    printf("size = %d\n", num);
     for(int j = 0; j < num; j++){
-      printf("Generating the next size: %3d%% done... %.3f KB %d graphs", (int)(j*100/num), getMallInfo()/1000.0, (*(graphTiers + i))->size);
-      //printf("\n\033[F\033[J");
+      printf("Generating the next size: %3d%% done... %.3f KB %d graphs\n", (int)(j*100/num), getMallInfo()/1000.0, (*(graphTiers + i))->size);
       GraphList * gL = getNextSize(getGraph(*(graphTiers + i - 1), j));
-      //it helps to clean before merging to keep the sizes low for
-      //final row cleaning
-      //printf("done generating next size\n");
-      printf("\n");
-      clean(gL, args.n, args.m, args.maxThreads);
+      clean(gL, args.n, args.m, args.maxThreads, false);
       printf("\033[F\033[J");
-      //printf("done cleaning\n");
       mergeGraphLists(*(graphTiers + i), gL);
     }
     printf("After generating next size: ");
     dumpMallinfo();
-
+    dumpGraphList(*(graphTiers + i), args.n, args.m, true);
     printf("%d has %d graphs raw\n", i+1, (*(graphTiers + i))->size);
     printf("Cleaning this set up...\n");
+    clean(*(graphTiers + i), args.n, args.m, args.maxThreads, true);
 
-    clean(*(graphTiers + i), args.n, args.m, args.maxThreads);
 
     printf("%d has %d graphs cleaned\n",i+1, (*(graphTiers + i))->size);
+    dumpGraphList(*(graphTiers + i), args.n, args.m, false);
+    printf("-------------------\n");
+    printf("%d : %d\n", i + 1, (*(graphTiers + i))->size);
 
-    printf("-------------------\n%d : %d\n", i + 1, (*(graphTiers + i))->size);
   }
 }
 
+
+/*
+  Every say 10000 graphs, join all threads up that point, remove all nulls, and write to file
+  the graphs you've found so far. Then continue for the next thousand, etc. Also update the raw file to only include those
+  graphs that haven't been culled yet
+
+  I'd have to update the getlatest function to return the latest raw file that still has files in it
+
+*/
 
 
 int main(int argc, char **argv){

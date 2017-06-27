@@ -4,9 +4,13 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdbool.h>
+#if _POSIX_C_SOURCE >= 199309L
 #include <time.h>
+#endif
 #include <pthread.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 /*
   A simple linked list, it is currently a big bottleneck so it Will
   be refined or replaced in future versions.
@@ -76,7 +80,16 @@ typedef struct cmdLineArgs {
 typedef struct GraphList {
   int size;
   Graph *** graphs;
+  int activeIndex;
 } GraphList;
+
+typedef struct tier {
+  int n;
+  int m;
+  int tier;
+  GraphList * gL;
+  bool isRaw;
+} tier;
 
 typedef struct isColorIsoThreadArgs {
 	Graph * current;
@@ -102,6 +115,7 @@ intList * newIntList(int n);
 intList2D * newIntList2D(int n);
 void setIntListIndex(intList * list, int index, int val);
 int getIntListIndex(intList * list, int n);
+
 //graph.c
 intList * getCharList(Graph * g, Color c);
 void printGraph(Graph * g);
@@ -111,6 +125,7 @@ GraphList * newGraphList(int numGraphs);
 Graph * copyGraph(Graph * g);
 void destroyGraph(Graph * g);
 Color getEdgeColor(Graph * g, int u, int v);
+Color getEdgeColorRaw(Graph * g, int n);
 void setEdgeColor(Graph * g, int u, int v, Color c);
 bool * hasNMinusOneEdges(Graph * g, Color c, int N);
 int numColorEdges(Graph * g, Color c, int vertex);
@@ -120,6 +135,9 @@ void destroyGraphList(GraphList * gL);
 void mergeGraphLists(GraphList * gLA, GraphList * gLB);
 void setGraph(GraphList * gL, Graph * g, int n);
 Graph * getGraph(GraphList * gL, int n);
+Graph * newGraph(int n, char * raw);
+void clearGraphList(GraphList * gL);
+
 
 //util.c
 void dumpMallinfo();
@@ -132,9 +150,15 @@ intList * decToFact(int n, int dig);
 intList * collapseVerts(intList2D * verts, int n);
 bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h);
 bool isColorIso(Graph * g, Graph * h);
-void clean(GraphList * gL, int n, int m, int maxThreads);
+void clean(GraphList * gL, int n, int m, int maxThreads, bool isMajor);
 int run(cmdLineArgs args);
 int cmpfunc(const void * a, const void * b);
 
 //cmdline.c
 cmdLineArgs processArgs(int argc, char **argv);
+
+//storage.c
+void dumpGraphList(GraphList * gL, int n, int m, bool raw);
+void dumpAppendGraphList(GraphList * gL, int n, int m, bool raw, int ID);
+GraphList * readGraphList(FILE * fp);
+tier * findLatest(int n, int m);
