@@ -403,49 +403,6 @@ void * isColorIsoThread(void * args){
 }
 
 
-/*
-void * isColorIsoThread(void * args){
-	isColorIsoThreadArgs * args1 = (isColorIsoThreadArgs *) args;
-	Graph * current = args1->current;
-	for(int j = args1->numGraphs - 1; j > args1->i; j--){
-			//printf("Checking %d vs %d\n", i, j);
-			Graph * other = getGraph(args1->gL, j);
-			//if (current->isNull) break;
-			if (!other->isNull){
-				//printGraph(args.current);
-				if(isColorIso(current, other)){
-					 other->isNull = true;
-
-					 (*args1->temp)--;
-				}
-			}
-	}
-	free(args);
-	(*args1->numActive)--;
-  //printf("just finished %d\n", (args1->i));
-}
-*/
-
-
-
-/*
-while i < numGraphs {
-  while j < blocksize {
-    if active < threadMax {
-      spawn thread
-      j++
-      i++
-    }
-  }
-  join to all threads in block
-  shrink the graph list
-  graphs already checked push to file, make null
-  gL = shrunk graph list
-}
-
-*/
-
-
 void cleanKns(GraphList * gL, int n, int m, int * tempGraphs, bool isMajor){
   int numGraphs = gL->size;
   for(int i = 0; i < numGraphs; i++){
@@ -581,121 +538,20 @@ void clean(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
 
         }
       }
-      //  printf("done copying %d\n", found);
-      //if (isMajor) dumpAppendGraphList(temp, n, m, false, blockID);
-      /*for(int l = 0; l < blockSize && l < numGraphs; l++){
-        Graph * g = getGraph(gL, l);
-        g->isNull = true;
-      }*/
-      //printf("a\n");
+
       destroyGraphList(temp);
-      //printf("b\n");
       clearGraphList(gL);
       numGraphs = gL->size;
       activeIndex +=  found;
       gL->activeIndex = activeIndex;
       i = activeIndex;
-      //printf("c\n");
+
       if (isMajor) dumpGraphList(gL, n, m);
-      //printf("d\n");
     }
 
     clearGraphList(gL);
 
  }
-
-/*
-
-void clean(GraphList * gL, int n, int m, int maxThreads){
-    //printf("n = %d, m = %d\n", n, m);
-    int numGraphs = gL->size;
-    int foundGraphs = 0;
-
-		//printf("starting Kn checking\n");
-    int temp = numGraphs;
-    //Now we have to check there are no red K3s and no green K4s
-    //Honestly its probably more efficient to check this first,
-    //should be tested
-    for(int i = 0; i < numGraphs; i++){
-      Graph * current = getGraph(gL, i);
-			//printGraph(current);
-      if(!current->isNull){
-				//printf("checking K3\n");
-        bool Kn;
-        if (n == 3) {
-          Kn = hasK3(current, RED);
-        }else if(n == 4){
-          Kn = hasK4(current, RED);
-        }else if(n == 5){
-          Kn = hasK5(current, RED);
-        }
-
-
-        if(Kn){
-	          current->isNull = true;
-	          temp--;
-        }else{
-					//printf("checking K5\n");
-					bool Km;
-          if (m == 3) {
-            Km = hasK3(current, GREEN);
-          }else if(m == 4){
-            Km = hasK4(current, GREEN);
-          }else if(m == 5){
-            Km = hasK5(current, GREEN);
-          }
-					if(Km){
-	          current->isNull = true;
-	          temp--;
-					}
-				}
-      }
-      if(gL->size > 5000 && i%100 == 0){
-        printf("%3.1f%% done checking for Kns... %d / %d", (i*100.0/gL->size), i, temp);
-        printf("\n\033[F\033[J");
-      }
-    }
-		//printf("done Kn checking, starting color iso checking %d\n", numGraphs);
-    //has to check every graph with every other graph
-    //but the first one invalidates a lot of others, so not quite n^2
-
-		pthread_t pids[numGraphs];
-		int threads = 0;
-		int activeIndex = 0;
-		int numActive = 0;
-		int i = 0;
-    int found = 0;
-    while(i < numGraphs){
-			if (numActive < maxThreads){
-
-	      Graph * current = getGraph(gL, i);
-	      if(!current->isNull){
-					isColorIsoThreadArgs * args = malloc(sizeof * args);
-					args->current = current;
-					args->temp = &temp;
-					args->numGraphs = numGraphs;
-					args->gL = gL;
-					args->i = i;
-					args->numActive = &numActive;
-					numActive++;
-					pthread_create(&pids[threads], NULL, isColorIsoThread, args);
-					threads++;
-				}
-				i++;
-			}
-			if(gL->size > 100 && i%10 == 0){
-        printf("%3.1f%% done checking color isos... %d / %d %d active", (i*100.0/gL->size), i, temp, numActive);
-        printf("\n\033[F\033[J");
-      }
-    }
-		for (int k = 0; k < threads; k++){
-			void * status;
-			pthread_join(pids[k], &status);
-		}
-    clearGraphList(gL);
-
- }
-*/
 
 
 /*
