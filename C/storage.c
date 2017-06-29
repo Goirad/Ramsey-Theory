@@ -18,16 +18,12 @@
  */
 #include "defs.h"
 
-void dumpGraphList(GraphList * gL, int n, int m, bool raw){
+void dumpGraphList(GraphList * gL, int n, int m){
   if (gL->size > 0){
     int numVertices = getGraph(gL, 0)->n;
     FILE * fp;
     char name[100];
-    if (raw) {
-      sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %dR.txt", n, m, n, m, numVertices);
-    }else{
-      sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d.txt", n , m, n, m, numVertices);
-    }
+    sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d.txt", n, m, n, m, numVertices);
     fp = fopen(name, "w+");
     fprintf(fp, "%d\n%d\n", n, m);
     fprintf(fp, "%d\n", numVertices);
@@ -43,7 +39,7 @@ void dumpGraphList(GraphList * gL, int n, int m, bool raw){
     fclose(fp);
   }
 }
-
+/*
 void dumpAppendGraphList(GraphList * gL, int n, int m, bool raw, int ID){
   if (gL->size > 0){
     int numVertices = getGraph(gL, 0)->n;
@@ -68,7 +64,7 @@ void dumpAppendGraphList(GraphList * gL, int n, int m, bool raw, int ID){
     fclose(fp);
   }
 }
-
+*/
 GraphList * readGraphList(FILE * fp){
   char buff[255];
 
@@ -105,28 +101,16 @@ tier * findLatest(int n, int m){
   char buff[255];
   int best = 0;
   char bestFile[255];
-  bool isRaw;
   for (int i = 2; i < 100; i++){
-    sprintf(buff, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %dR.txt", n, m, n, m, i);
+    sprintf(buff, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d.txt", n, m, n, m, i);
     if (fileExists(buff)){
       //printf("Found tier %d\n", i);
       //printf("In %s\n", buff);
       strcpy(bestFile, buff);
       best = i;
-      isRaw = true;
     }else{
-
-      sprintf(buff, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d.txt", n, m, n, m, i);
-      if (fileExists(buff)){
-        //printf("Found tier %d\n", i);
-        //printf("In %s\n", buff);
-        strcpy(bestFile, buff);
-        best = i;
-        isRaw = false;
-      }else{
-        printf("Highest tier found\n");
-        break;
-      }
+      printf("Highest tier found\n");
+      break;
     }
 
 
@@ -138,19 +122,16 @@ tier * findLatest(int n, int m){
     fp = fopen(bestFile, "r");
     printf("opening %s\n", bestFile);
     GraphList * gL = readGraphList(fp);
-    printf("back to you jim %d\n", isRaw);
     fclose(fp);
     t->n = n;
     t->m = m;
     t->tier = best;
     t->gL = gL;
-    t->isRaw = isRaw;
   }else{
     t->n = n;
     t->m = m;
     t->tier = 0;
     t->gL = NULL;
-    t->isRaw = false;
   }
 
   return t;

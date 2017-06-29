@@ -88,16 +88,18 @@ typedef struct tier {
   int m;
   int tier;
   GraphList * gL;
-  bool isRaw;
 } tier;
 
 typedef struct isColorIsoThreadArgs {
-	Graph * current;
 	int * temp;
+  int base;
+  int blockSize;
+  int numThreads;
+  int mod;
 	int numGraphs;
+  int *  counter;
+  int * deleted;
 	GraphList * gL;
-	int i;
-	int * numActive;
 } isColorIsoThreadArgs;
 
 //function headers
@@ -158,7 +160,7 @@ int cmpfunc(const void * a, const void * b);
 cmdLineArgs processArgs(int argc, char **argv);
 
 //storage.c
-void dumpGraphList(GraphList * gL, int n, int m, bool raw);
-void dumpAppendGraphList(GraphList * gL, int n, int m, bool raw, int ID);
+void dumpGraphList(GraphList * gL, int n, int m);
+//void dumpAppendGraphList(GraphList * gL, int n, int m, int ID);
 GraphList * readGraphList(FILE * fp);
 tier * findLatest(int n, int m);
