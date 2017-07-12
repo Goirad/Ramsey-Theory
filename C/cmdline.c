@@ -11,18 +11,21 @@ cmdLineArgs processArgs(int argc, char **argv){
   int n, m;
   int maxIters;
   int maxThreads;
+  int type;
 
-  if (argc < 5) {
-    printf("Use 4 int args, n, m, maxIterations, maxThreads\n");
+  if (argc < 6) {
+    printf("Use 5 int args:parallism, n, m, maxIterations, maxThreads\n");
+    printf("For parallism: 0 is single threaded, 1 is multithreaded by slicing, and 2 is multithreaded by polling.\n");
   }else{
-    n = atoi(argv[1]);
-    m = atoi(argv[2]);
-    maxIters = atoi(argv[3]);
-    maxThreads = atoi(argv[4]);
+    type = atoi(argv[1]);
+    n = atoi(argv[2]);
+    m = atoi(argv[3]);
+    maxIters = atoi(argv[4]);
+    maxThreads = atoi(argv[5]);
   }
   printf("n = %d, m = %d\n", n, m);
   printf("maxIters = %d, maxThreads = %d\n", maxIters, maxThreads);
-  cmdLineArgs args = {n, m, maxIters, maxThreads};
+  cmdLineArgs args = {type, n, m, maxIters, maxThreads};
 
   return args;
 }

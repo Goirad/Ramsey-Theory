@@ -11,7 +11,7 @@ intList * getCharList(Graph * g, Color c){
   intList * charList = newIntList(g->n);
   int i, j;
   for(i = 0; i < g->n; i++){
-    int colorEdges = 0;
+    char colorEdges = 0;
     for(j = 0; j < g->n; j++){
       if(getEdgeColor(g, i, j) == c){
         colorEdges++;
@@ -69,6 +69,9 @@ Graph * createKn(int numVertices) {
   Kn->isNull = false;
   Kn->edges =  malloc(numEdges * sizeof *(Kn->edges));
   Kn->n = numVertices;
+  Kn->charList = getCharList(Kn, RED);
+  Kn->charListSorted = getCharList(Kn, RED);
+  qsort(Kn->charListSorted->values,numVertices,sizeof(int),cmpfunc);
   int edgeCount;
   for (edgeCount = 0; edgeCount < numEdges; edgeCount++) {
     *(Kn->edges + edgeCount) = RED;
@@ -115,6 +118,8 @@ void destroyGraph(Graph * g){
   if(g != NULL){
     if(g->isNull){
       free(g->edges);
+      freeIntList(g->charList);
+      freeIntList(g->charListSorted);
       free(g);
     }else{
       printf("woops tried to free non null graph\n");
@@ -289,8 +294,12 @@ Graph * newGraph(int n, char * raw){
   g->edges = malloc(n*(n-1)/2 * sizeof *(g->edges));
   g->n = n;
   g->isNull = false;
+
   for(int i = 0; i < strlen(raw) - 1; i++){
     g->edges[i] = raw[i] - '0';
   }
+  g->charList = getCharList(g, RED);
+  g->charListSorted = getCharList(g, RED);
+  qsort(g->charListSorted->values,n,sizeof(*g->charListSorted->values),cmpfunc);
   return g;
 }

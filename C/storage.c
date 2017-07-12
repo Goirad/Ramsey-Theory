@@ -39,32 +39,7 @@ void dumpGraphList(GraphList * gL, int n, int m){
     fclose(fp);
   }
 }
-/*
-void dumpAppendGraphList(GraphList * gL, int n, int m, bool raw, int ID){
-  if (gL->size > 0){
-    int numVertices = getGraph(gL, 0)->n;
-    FILE * fp;
-    char name[100];
-    if (raw) {
-      sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %dR - %d.txt", n, m, n, m, numVertices, ID);
-    }else{
-      sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d - %d.txt", n , m, n, m, numVertices, ID);
-    }
-    fp = fopen(name, "w+");
-    fprintf(fp, "%d\n%d\n", n, m);
-    fprintf(fp, "%d\n", numVertices);
-    fprintf(fp, "%d\n", gL->size);
-    for (int i = 0; i < gL->size; i++){
-      Graph * g = getGraph(gL, i);
-      for (int j = 0; j < numVertices * (numVertices - 1)/2; j++){
-        fprintf(fp, "%d", getEdgeColorRaw(g, j));
-      }
-      fprintf(fp, "\n");
-    }
-    fclose(fp);
-  }
-}
-*/
+
 GraphList * readGraphList(FILE * fp){
   char buff[255];
 
@@ -84,9 +59,11 @@ GraphList * readGraphList(FILE * fp){
   int activeIndex = atoi(buff);
 
   GraphList * gL = newGraphList(numGraphs);
+  //printf("reading graphs\n");
   for(int i = 0; i < numGraphs; i++){
     fgets(buff, 255, fp);
     setGraph(gL, newGraph(numVertices, buff), i);
+    //printf("reading graph %d / %d\n", i, numGraphs);
   }
   gL->activeIndex = activeIndex;
   return gL;
@@ -122,6 +99,7 @@ tier * findLatest(int n, int m){
     fp = fopen(bestFile, "r");
     printf("opening %s\n", bestFile);
     GraphList * gL = readGraphList(fp);
+    //printf("done reading\n");
     fclose(fp);
     t->n = n;
     t->m = m;

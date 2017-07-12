@@ -26,8 +26,8 @@ typedef struct List {
 } List;
 
 typedef struct intList {
-  int length;
-  int * values;
+  char length;
+  char * values;
 } intList;
 
 typedef struct intList2D {
@@ -59,9 +59,12 @@ typedef struct Graph {
   int n;
   Color * edges;
   bool isNull;
+  intList * charList;
+  intList * charListSorted;
 } Graph;
 
 typedef struct cmdLineArgs {
+  int type;
   int n;
   int m;
   int maxIters;
@@ -90,7 +93,7 @@ typedef struct tier {
   GraphList * gL;
 } tier;
 
-typedef struct isColorIsoThreadArgs {
+typedef struct MTSlicesArgs {
 	int * temp;
   int base;
   int blockSize;
@@ -100,7 +103,26 @@ typedef struct isColorIsoThreadArgs {
   int *  counter;
   int * deleted;
 	GraphList * gL;
-} isColorIsoThreadArgs;
+} MTSlicesArgs;
+typedef struct MTPollingArgs {
+  Graph * current;
+	int * temp;
+	int numGraphs;
+	GraphList * gL;
+	int i;
+	int * numActive;
+} MTPollingArgs;
+
+typedef struct isoCheckMemBlock {
+  intList2D * origVertsG;
+  intList2D * vertsG;
+  intList2D * vertsH;
+  intList * collapseVertsG;
+  intList * collapseVertsH;
+  intList * perm;
+  intList * permScratch;
+
+} isoCheckMemBlock;
 
 //function headers
 //list.c
@@ -109,10 +131,12 @@ void freeIntList2D(intList2D * listArray);
 void printIntList(intList * list);
 void addToIntList(intList * list, int val);
 intList * copyIntList(intList * list);
+void copyIntList1(intList * src, intList * dest);
 int getIntListIndex(intList * list, int n);
 //Cell * getListCellIndex(List * list, int n);
 intList2D * copyIntList2D(intList2D * array);
 intList * permuteList(intList * list,  intList * perm);
+void permuteList1(intList * src, intList * dest,  intList * perm, intList * permScratch);
 intList * newIntList(int n);
 intList2D * newIntList2D(int n);
 void setIntListIndex(intList * list, int index, int val);
@@ -150,9 +174,17 @@ bool hasK4(Graph * g, Color c);
 int fact(int n);
 intList * decToFact(int n, int dig);
 intList * collapseVerts(intList2D * verts, int n);
+void collapseVerts1(intList2D * verts, intList * dest, int n);
 bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h);
+bool recIsoCheck1(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h, isoCheckMemBlock * memBlock);
+bool isColorIso1(Graph * g, Graph * h, isoCheckMemBlock * memBlock);
 bool isColorIso(Graph * g, Graph * h);
-void clean(GraphList * gL, int n, int m, int maxThreads, bool isMajor);
+isoCheckMemBlock * getIsoCheckMemBlock(int numVerts);
+
+
+void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor);
+void cleanMTPolling(GraphList * gL, int n, int m, int maxThreads, bool isMajor);
+void cleanST(GraphList * gL, int n, int m, bool isMajor);
 int run(cmdLineArgs args);
 int cmpfunc(const void * a, const void * b);
 

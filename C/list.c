@@ -95,6 +95,13 @@ intList * copyIntList(intList * list){
   }
 }
 
+void copyIntList1(intList * src, intList * dest){
+  dest->length = src->length;
+  for(int i = 0; i < dest->length; i++){
+    setIntListIndex(dest, i, getIntListIndex(src, i));
+  }
+}
+
 /*
   Creates a deep copy of an array of n lists.
 */
@@ -106,6 +113,7 @@ intList2D * copyIntList2D(intList2D * array){
   }
   return result;
 }
+
 
 
 /*
@@ -158,30 +166,31 @@ int getNthNonNegValue(intList * list, int n){
 */
 
 intList * permuteList(intList * list, intList * perm){
-	//printf("original - ");
-	//printIntList(list);
-	//printf("perm - ");
-	//printIntList(perm);
   intList * result = newIntList(list->length);
-
   intList * copy = copyIntList(list);
-	//WHY WAS IT LENGTH - 1?? ******************************************************************
   for(int i = 0; i < list->length; i++){
     int address = getIntListIndex(perm, i);
     setIntListIndex(result, i, getNthNonNegValue(copy, address));
-    //printf("after adding to result %d\n", getMallInfo() - start);
-    //remove it from copy
     setNthNonNegValue(copy, address, -1);
-    //go to the next element
-    //printf("dunno\n");
   }
-  //printf("after adding last %d\n", getMallInfo() - start);
-  //printf("copy length %d\n", copy->length);
-  //printf("copy is empty %d\n", copy->first->next == NULL);
   freeIntList(copy);
-  //printf("after the end %d\n", getMallInfo() - start);
-  //the first element is meaningless, so free and skip it
-	//printf("permutation - ");
-	//printIntList(result);
   return result;
+}
+
+void permuteList1(intList * src, intList * dest, intList * perm, intList * permScratch){
+  permScratch->length = src->length;
+
+  //if list has stuff, copy them
+  //printf("about to copy\n");
+  if(src->length > 0){
+		permScratch->length = src->length;
+    memcpy(permScratch->values, src->values, src->length * sizeof * src->values);
+  }
+
+  dest->length = src->length;
+  for(int i = 0; i < src->length; i++){
+    int address = getIntListIndex(perm, i);
+    setIntListIndex(dest, i, getNthNonNegValue(permScratch, address));
+    setNthNonNegValue(permScratch, address, -1);
+  }
 }
