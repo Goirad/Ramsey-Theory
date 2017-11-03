@@ -5,10 +5,25 @@
 intList * newIntList(int n){
   intList * list = malloc(sizeof * list);
   list->length = n;
+  list->size = n;
   if(n > 0) {
 	  list->values = malloc(n * sizeof * list->values);
 	}
 	return list;
+}
+
+char * getIntListStr(intList * list){
+  char * ans = malloc(sizeof *ans * (1 + 3 * list->length + 2));
+  strcat(ans, "[");
+  char * buf = malloc(50);
+
+  for(int i = 0; i < list->length - 1; i++){
+    sprintf(buf, "%d, ", getIntListIndex(list, i));
+    strcat(ans, buf);
+  }
+  sprintf(buf, "%d]", getIntListIndex(list, list->length - 1));
+  strcat(ans, buf);
+  return ans;
 }
 
 intList2D * newIntList2D(int n){
@@ -63,9 +78,26 @@ void printIntList(intList * list){
   Adds val to the end of the list provided.
 */
 
+void addToIntListME(intList * list, int val, int growthRate){
+  if(list->length == 0){
+    list->values = malloc(growthRate *sizeof *list->values);
+    list->values[0] = val;
+    list->length++;
+    list->size = growthRate;
+  }else if(list->length >= list->size){
+    list->values = realloc(list->values, (list->length + growthRate) * sizeof *list->values);
+    list->values[list->length] = val;
+    list->length++;
+    list->size += growthRate;
+  }else{
+    list->values[list->length] = val;
+    list->length++;
+  }
+}
+
 void addToIntList(intList * list, int val){
   if(list->length == 0){
-    list->values = malloc(sizeof *list->values);
+    list->values = malloc( sizeof *list->values);
     list->values[0] = val;
     list->length++;
   }else{
@@ -95,7 +127,7 @@ intList * copyIntList(intList * list){
   }
 }
 
-void copyIntList1(intList * src, intList * dest){
+void copyIntListTo(intList * src, intList * dest){
   dest->length = src->length;
   for(int i = 0; i < dest->length; i++){
     setIntListIndex(dest, i, getIntListIndex(src, i));
@@ -164,20 +196,7 @@ int getNthNonNegValue(intList * list, int n){
 
   return = [1 4 3 0 2]
 */
-
-intList * permuteList(intList * list, intList * perm){
-  intList * result = newIntList(list->length);
-  intList * copy = copyIntList(list);
-  for(int i = 0; i < list->length; i++){
-    int address = getIntListIndex(perm, i);
-    setIntListIndex(result, i, getNthNonNegValue(copy, address));
-    setNthNonNegValue(copy, address, -1);
-  }
-  freeIntList(copy);
-  return result;
-}
-
-void permuteList1(intList * src, intList * dest, intList * perm, intList * permScratch){
+void permuteList(intList * src, intList * dest, intList * perm, intList * permScratch){
   permScratch->length = src->length;
 
   //if list has stuff, copy them

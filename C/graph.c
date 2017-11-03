@@ -19,6 +19,39 @@ intList * getCharList(Graph * g, Color c){
     }
     setIntListIndex(charList, i, colorEdges);
   }
+/*
+  intList * charList2 = newIntList(g->n);
+  for(i = 0; i < g->n; i++){
+    int k = 0;
+    for(j = 0; j < g->n; j++){
+      if(i != j && getEdgeColor(g, i, j) == c){
+        k += getIntListIndex(charList, j);
+      }
+    }
+    setIntListIndex(charList2, i, k);
+  }
+
+  for(i = 0; i < g->n; i++){
+
+    int a = getIntListIndex(charList, i);
+    int b = getIntListIndex(charList2, i);
+    setIntListIndex(charList, i, (a<<21) + b);
+  }
+*/
+
+
+  char x = getIntListIndex(charList, 0);
+  bool u = true;
+  for(i = 0; i < g->n; i++){
+    if( getIntListIndex(charList, i) != x ){
+      u = false;
+      break;
+    }
+  }
+  if(0){
+    printIntList(charList);
+    printGraphL(g);
+  }
   return charList;
 }
 
@@ -213,7 +246,7 @@ void clearGraphList(GraphList * gL){
       foundGraphs++;
     }
   }
-
+	//printf("%d graphs originally, %d now\n", gL->size, foundGraphs);
   for(int i = 0; i < foundGraphs; i++){
     if((*(*gL->graphs + i))->isNull) destroyGraph(*(*gL->graphs + i));
     *(*gL->graphs + i) = *(*cleanedGraphs->graphs + i);
@@ -294,12 +327,13 @@ Graph * newGraph(int n, char * raw){
   g->edges = malloc(n*(n-1)/2 * sizeof *(g->edges));
   g->n = n;
   g->isNull = false;
+  g->isValidated = false;
 
   for(int i = 0; i < strlen(raw) - 1; i++){
     g->edges[i] = raw[i] - '0';
   }
   g->charList = getCharList(g, RED);
   g->charListSorted = getCharList(g, RED);
-  qsort(g->charListSorted->values,n,sizeof(*g->charListSorted->values),cmpfunc);
+  qsort(g->charListSorted->values, n, sizeof(*g->charListSorted->values),cmpfunc);
   return g;
 }

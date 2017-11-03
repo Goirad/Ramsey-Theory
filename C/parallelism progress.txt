@@ -45,3 +45,46 @@ without any parallelism:
 
 100 threads
 	35 s
+
+
+
+Single Threaded:
+	~450 g/s
+	33s
+
+Multi Threaded Slices:
+	1 thread:
+		~360 g/s
+		47s
+	2 threads:
+		~300 g/s @ 10s
+		26s
+	3 threads:
+		~270 g/s
+		18s
+	4 threads:
+		~230 g/s
+		14s
+
+
+The idea:
+	Sort the graphs, and scan for blocks, at least BlockSize big. Add the indecies of
+	the first graph to a stack.
+	Then the threads take blocks from the stack using a mutex, and process, until
+	they've cleaned enough that BlockSize graphs are validated. Rinse and repeat.
+	Threads have to be changed to efficiently use their sorted qualities.
+
+Current:
+for g in block:
+    for other h in block:
+        Run through all permutations of g
+				for each permutation:
+        	if match with h, return true and break
+					else return false and match
+
+Or
+for g in block:
+    run through all permutations of g
+		for each permutation:
+	    for each other h in block:
+	        if match, remove h

@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 /*
   A simple linked list, it is currently a big bottleneck so it Will
   be refined or replaced in future versions.
@@ -26,10 +27,19 @@ typedef struct List {
 } List;
 
 typedef struct intList {
-  char length;
-  char * values;
+  int length;
+  int size;
+  int * values;
 } intList;
-
+/*
+typedef struct TSStack {
+	int * list;
+	int length;
+	int size;
+	int growthRate;
+	pthread_mutex_t * mutex;
+} TSStack;
+*/
 typedef struct intList2D {
   int length;
   intList ** arrays;
@@ -61,6 +71,7 @@ typedef struct Graph {
   bool isNull;
   intList * charList;
   intList * charListSorted;
+  bool isValidated;
 } Graph;
 
 typedef struct cmdLineArgs {
@@ -100,9 +111,16 @@ typedef struct MTSlicesArgs {
   int numThreads;
   int mod;
 	int numGraphs;
-  int *  counter;
+  char * charListStr;
+  int current;
+  int chunkStart;
+  int chunkLength;
   int * deleted;
 	GraphList * gL;
+  intList * deletes;
+  int * validated;
+  pthread_mutex_t * validatedMutex;
+  struct TSStack * chunkStack;
 } MTSlicesArgs;
 typedef struct MTPollingArgs {
   Graph * current;
@@ -124,23 +142,26 @@ typedef struct isoCheckMemBlock {
 
 } isoCheckMemBlock;
 
+
+
 //function headers
 //list.c
 void freeIntList(intList * list);
 void freeIntList2D(intList2D * listArray);
 void printIntList(intList * list);
 void addToIntList(intList * list, int val);
+void addToIntListME(intList * list, int val, int growthRate);
 intList * copyIntList(intList * list);
-void copyIntList1(intList * src, intList * dest);
+void copyIntListTo(intList * src, intList * dest);
 int getIntListIndex(intList * list, int n);
 //Cell * getListCellIndex(List * list, int n);
 intList2D * copyIntList2D(intList2D * array);
-intList * permuteList(intList * list,  intList * perm);
-void permuteList1(intList * src, intList * dest,  intList * perm, intList * permScratch);
+void permuteList(intList * src, intList * dest,  intList * perm, intList * permScratch);
 intList * newIntList(int n);
 intList2D * newIntList2D(int n);
 void setIntListIndex(intList * list, int index, int val);
 int getIntListIndex(intList * list, int n);
+char * getIntListStr(intList * list);
 
 //graph.c
 intList * getCharList(Graph * g, Color c);
@@ -172,14 +193,12 @@ GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
 bool hasK4(Graph * g, Color c);
 int fact(int n);
-intList * decToFact(int n, int dig);
-intList * collapseVerts(intList2D * verts, int n);
-void collapseVerts1(intList2D * verts, intList * dest, int n);
-bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h);
-bool recIsoCheck1(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h, isoCheckMemBlock * memBlock);
-bool isColorIso1(Graph * g, Graph * h, isoCheckMemBlock * memBlock);
-bool isColorIso(Graph * g, Graph * h);
+void decToFact(intList * dest, int n, int dig);
+void collapseVerts(intList2D * verts, intList * dest, int n);
+bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h, isoCheckMemBlock * memBlock);
+bool isColorIso(Graph * g, Graph * h, isoCheckMemBlock * memBlock);
 isoCheckMemBlock * getIsoCheckMemBlock(int numVerts);
+void freeIsoCheckMemBlock(isoCheckMemBlock * block);
 
 
 void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor);
@@ -196,3 +215,22 @@ void dumpGraphList(GraphList * gL, int n, int m);
 //void dumpAppendGraphList(GraphList * gL, int n, int m, int ID);
 GraphList * readGraphList(FILE * fp);
 tier * findLatest(int n, int m);
+
+
+typedef struct TSStack {
+	intList * list;
+	int length;
+	int size;
+	int growthRate;
+	pthread_mutex_t * mutex;
+} TSStack;
+
+
+//Function Declarations
+
+struct TSStack * TSS_New();
+void TSS_Destroy(struct TSStack * stack);
+void TSS_Push(struct TSStack * stack, int value);
+int  TSS_Pop(struct TSStack * stack, int * dest);
+void TSS_SetGrowthRate(struct TSStack *stack,
+                       int             rate);
