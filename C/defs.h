@@ -121,6 +121,7 @@ typedef struct MTSlicesArgs {
   int * validated;
   pthread_mutex_t * validatedMutex;
   struct TSStack * chunkStack;
+  int * isActive;
 } MTSlicesArgs;
 typedef struct MTPollingArgs {
   Graph * current;
@@ -192,8 +193,8 @@ int getMallInfo();
 GraphList * getNextSize(Graph * g);
 bool hasK3(Graph * g, Color c);
 bool hasK4(Graph * g, Color c);
-int fact(int n);
-void decToFact(intList * dest, int n, int dig);
+long fact(int n);
+void decToFact(intList * dest, long n, int dig);
 void collapseVerts(intList2D * verts, intList * dest, int n);
 bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h, isoCheckMemBlock * memBlock);
 bool isColorIso(Graph * g, Graph * h, isoCheckMemBlock * memBlock);

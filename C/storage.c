@@ -60,9 +60,15 @@ GraphList * readGraphList(FILE * fp){
 
   GraphList * gL = newGraphList(numGraphs);
   //printf("reading graphs\n");
+  //TODO validate graphs
   for(int i = 0; i < numGraphs; i++){
     fgets(buff, 255, fp);
-    setGraph(gL, newGraph(numVertices, buff), i);
+    Graph * g = newGraph(numVertices, buff);
+    if (i < activeIndex) {
+      g->isValidated = true;
+    }
+    setGraph(gL, g, i);
+
     //printf("reading graph %d / %d\n", i, numGraphs);
   }
   gL->activeIndex = activeIndex;

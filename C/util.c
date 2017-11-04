@@ -174,7 +174,7 @@ bool hasK5(Graph * g, Color c){
 /*
   Simple iterative factorial function
 */
-int fact(int n){
+long fact(int n){
   int t = 1;
   for(int  i = 2; i <= n; i++){
     t *= i;
@@ -193,9 +193,9 @@ int fact(int n){
   n is the number to convert
   dig is the number of digits the answer should have
 */
-void decToFact(intList * dest, int n, int dig){
+void decToFact(intList * dest, long n, int dig){
   int temp[dig];
-  int num = n;
+  long num = n;
   dest->length = dig;
   for(int i = 0; i < dig; i++){
     temp[i] = num % (i+1);
@@ -267,7 +267,7 @@ bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, G
     return true;
   }else{
     if(vertsG->arrays[depth]->length > 0){
-      for(int i = 0; i < fact(vertsG->arrays[depth]->length); i++){
+      for(long i = 0; i < fact(vertsG->arrays[depth]->length); i++){
         decToFact(memBlock->perm, i, memBlock->origVertsG->arrays[depth]->length);
         permuteList(memBlock->origVertsG->arrays[depth], memBlock->vertsG->arrays[depth], memBlock->perm, memBlock->permScratch);
         bool ans = recIsoCheck(vertsG, vertsH, depth + 1, g, h, memBlock);
@@ -489,6 +489,7 @@ void * MTSlicesThread(void * rawArgs){
 				if(!other->isNull && isColorIso(g, other, memBlock)){
 					other->isNull = true;
 					(*args->deleted)++;
+          //printf("%d\n\n\n\n\n\n\n\n\n\n\n", (*args->deleted));
 				}
 			}
 		}
@@ -535,8 +536,10 @@ void * MTSlicesThread(void * rawArgs){
 				//printf("Thread %d got block %d, %d graphs\n", args->mod, chunkStart, chunkEnd-chunkStart + 1);
 			}
 		}
-	}
 
+	}
+  //printf("thread stopped\n");
+  *args->isActive = 0;
   freeIsoCheckMemBlock(memBlock);
   //free(args);
 }
@@ -592,14 +595,21 @@ int graphPPPComparator(const void * g, const void * h){
   //printf("hi\n");
   intList * gCharList = g1->charListSorted;
   intList * hCharList = h1->charListSorted;
-
+/*
 	if(g1->isValidated && !h1->isValidated){
 		return -1;
 	}else if(!g1->isNull && h1->isValidated){
 		return 1;
 	}else{
 		return memcmp(gCharList->values, hCharList->values, gCharList->length * sizeof * gCharList->values);
-	}
+	*/
+  if(g1->isValidated && !h1->isValidated){
+    return -1;
+  }else if(!g1->isValidated && h1->isValidated){
+    return 1;
+  }else{
+    return memcmp(gCharList->values, hCharList->values, gCharList->length * sizeof * gCharList->values);
+  }
 
 }
 
@@ -1000,6 +1010,7 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
 	    //printf("%d, %d, %d\n", i, numGraphs, 3);
 	    if(cmpGraphs(current, other)){
 			  //printf("about to push\n");
+        //printf("pushing %d\n", i);
 	      TSS_Push(stack, i);
 			  //printf("post push\n");
 	      current = getGraph(gL, i);
@@ -1013,6 +1024,8 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
     pthread_mutex_t * validatedMutex = malloc(sizeof * validatedMutex);
     pthread_mutex_init(validatedMutex, NULL);
     MTSlicesArgs ** args = malloc(maxThreads * sizeof * args);
+    int actives[maxThreads];
+
 
     for (int t = 0; t < maxThreads; t++){
       args[t] = malloc(sizeof * args[t]);
@@ -1027,17 +1040,23 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
       args[t]->deleted = &deleted[t];
       args[t]->validatedMutex = validatedMutex;
       args[t]->chunkStack = stack;
+      args[t]->isActive = &actives[t];
+      actives[t] = 1;
       pthread_create(&pids[t], NULL, MTSlicesThread, args[t]);
 
+
     }
-    while(validated < blockSize && isMajor && validated + activeIndex < numGraphs && stack->list->length > 0){
+    int numActive = sumArray(actives, maxThreads);
+    //printf("%d active\n", numActive);
+    while(validated < blockSize && isMajor && validated + activeIndex < numGraphs && numActive > 0){
       int tot = sumArray(deleted, maxThreads);
+      numActive = sumArray(actives, maxThreads);
       //printf("j = %d\n", j);
       time_t now = time(0);
       int delta = (now - then);
-        printf("Thread    Chunk  Length Current     G/s Characteristic List\n");
+        printf("Thread    Chunk  Length Current     G/s Active Characteristic List\n");
       for(int i = 0; i < maxThreads; i++){
-        printf("%6d %8d %7d %7d %7.3f %s\n", args[i]->mod, args[i]->chunkStart, args[i]->chunkLength, args[i]->current - args[i]->chunkStart, 1.0* *args[i]->deleted/delta, args[i]->charListStr);
+        printf("%6d %8d %7d %7d %7.3f      %d %s\n", args[i]->mod, args[i]->chunkStart, args[i]->chunkLength, args[i]->current - args[i]->chunkStart, 1.0* *args[i]->deleted/delta, *args[i]->isActive, args[i]->charListStr);
       }
       printf("%d %3.1f%% done with block %d, %d / %d or %3.1f%% total, averaging %3.6f g/s (%3.2f / t), total of %d gs over %02d:%02d:%02d used %.3f KB\n",
       stack->list->length, (100.0 * validated) / blockSize, blockID, activeIndex, numGraphs, 100.0 * activeIndex/numGraphs,
@@ -1143,7 +1162,7 @@ int run(cmdLineArgs args){
         sortGraphList(gL);
         experimentalSortedCleaner(gL, args.n, args.m, false);
       }
-      printf("\033[F[F\033[J");
+      printf("\033[F\033[J");
       //printf("done cleaning\n");
       for(int k = 0; k < gL->size; k++){
         getGraph(gL, k)->isValidated = false;
