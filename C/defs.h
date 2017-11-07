@@ -72,6 +72,7 @@ typedef struct Graph {
   intList * charList;
   intList * charListSorted;
   bool isValidated;
+  int complexityClass;
 } Graph;
 
 typedef struct cmdLineArgs {
@@ -122,6 +123,8 @@ typedef struct MTSlicesArgs {
   pthread_mutex_t * validatedMutex;
   struct TSStack * chunkStack;
   int * isActive;
+  pthread_mutex_t * totalActiveMutex;
+  int * totalActive;
 } MTSlicesArgs;
 typedef struct MTPollingArgs {
   Graph * current;
@@ -163,6 +166,10 @@ intList2D * newIntList2D(int n);
 void setIntListIndex(intList * list, int index, int val);
 int getIntListIndex(intList * list, int n);
 char * getIntListStr(intList * list);
+char * getIntListStrNorm(intList * list);
+int intListMin(intList * list);
+int intListMinIndex(intList * list);
+int getNthNonNegValue(intList * list, int n);
 
 //graph.c
 intList * getCharList(Graph * g, Color c);

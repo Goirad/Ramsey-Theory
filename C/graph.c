@@ -19,7 +19,10 @@ intList * getCharList(Graph * g, Color c){
     }
     setIntListIndex(charList, i, colorEdges);
   }
-/*
+
+
+  //charlist contains a list where the value at i is the number of red edges from i
+
   intList * charList2 = newIntList(g->n);
   for(i = 0; i < g->n; i++){
     int k = 0;
@@ -35,11 +38,25 @@ intList * getCharList(Graph * g, Color c){
 
     int a = getIntListIndex(charList, i);
     int b = getIntListIndex(charList2, i);
-    setIntListIndex(charList, i, (a<<21) + b);
+    if (a == 0) {
+      //printf("a: %d b:%d\n", a, b);
+    }
+    setIntListIndex(charList, i, (a<<21) + (b<<5) + 31);
   }
-*/
+  freeIntList(charList2);
+  /*
+  for(int i = 0; i < g->n; i++){
+    int x = getIntListIndex(charList, i);
+    if (!x) {
+      //printIntList(charList);
+      //printGraphL(g);
+
+    }
+  }*/
 
 
+
+/*
   char x = getIntListIndex(charList, 0);
   bool u = true;
   for(i = 0; i < g->n; i++){
@@ -51,8 +68,55 @@ intList * getCharList(Graph * g, Color c){
   if(0){
     printIntList(charList);
     printGraphL(g);
-  }
+  }*/
   return charList;
+}
+
+
+int dijkstra(Graph * g, int vert){
+  intList * lengths = newIntList(g->n);
+  intList * unvisited = newIntList(g->n);
+
+  for(int i = 0; i < g->n; i++){
+    setIntListIndex(unvisited, i, 1);
+    if (i == vert) {
+      setIntListIndex(lengths, i, 0);
+    }else{
+      setIntListIndex(lengths, i, 1000);
+    }
+  }
+
+  int current = vert;
+  int currentLength = getIntListIndex(lengths, current);
+  while (getNthNonNegValue(unvisited, 0) != -1) {
+    for (int i = 0; i < g->n; i++){
+      if (i != current && getEdgeColor(g, current, i) == RED && currentLength + 1 < getIntListIndex(lengths, i)){
+        setIntListIndex(lengths, i, currentLength + 1);
+      }
+    }
+    setIntListIndex(unvisited, current, -1);
+    intList * t = newIntList(g->n) ;
+
+    for(int i = 0; i < g->n; i++){
+      if (getIntListIndex(unvisited, i) > 0) {
+        setIntListIndex(t, i, getIntListIndex(lengths, i));
+      }else{
+        setIntListIndex(t, i, 1000);
+      }
+      current = intListMinIndex(t);
+      currentLength = intListMin(t);
+    }
+
+    int lens[g->n];
+
+    for(int i = 0; i < g->n; i++){
+      lens[getIntListIndex(lengths, i)] ++;
+    }
+
+    return (lens[0] << 27) + (lens[1] << 22) + (lens[2] << 17);
+    //find shortest path and go from there
+
+  }
 }
 
 /*
@@ -131,6 +195,7 @@ GraphList * newGraphList(int numGraphs){
   Remember to free this memory when you're done with it.
   See destroyGraph
 */
+//TODO broken, doesn't copy charLists
 Graph * copyGraph(Graph * g){
   Graph * out = malloc(sizeof *out);
   int n = g->n;
@@ -335,5 +400,21 @@ Graph * newGraph(int n, char * raw){
   g->charList = getCharList(g, RED);
   g->charListSorted = getCharList(g, RED);
   qsort(g->charListSorted->values, n, sizeof(*g->charListSorted->values),cmpfunc);
+
+  //TODO investigate assigning complexityClass instead to the largest partition
+  int best = 1;
+  int currentBest = 1;
+  int current = getIntListIndex(g->charListSorted, 0);
+  for (int i = 1; i < n; i++){
+    if(getIntListIndex(g->charListSorted, i) != current) {
+      if (currentBest > best) best = currentBest;
+      currentBest = 0;
+      current = getIntListIndex(g->charListSorted, i);
+    }else{
+      currentBest ++;
+    }
+  }
+  if (currentBest > best) best = currentBest;
+  g->complexityClass = best;
   return g;
 }

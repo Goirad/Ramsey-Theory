@@ -44,6 +44,21 @@ GraphList * getNextSize(Graph * g){
     current->charList = getCharList(current, RED);
     current->charListSorted = getCharList(current, RED);
     qsort(current->charListSorted->values, n + 1 ,sizeof(*current->charListSorted->values),cmpfunc);
+
+    int best = 0;
+    int currentBest = 0;
+    int currentD = getIntListIndex(current->charListSorted, 0);
+    for (int i = 1; i < n; i++){
+      if(getIntListIndex(current->charListSorted, i) != currentD) {
+        if (currentBest > best) best = currentBest;
+        currentBest = 0;
+        currentD = getIntListIndex(current->charListSorted, i);
+      }else{
+        currentBest++;
+      }
+    }
+    current->complexityClass = best;
+    //printf("%d %s\n", current->complexityClass, getIntListStrNorm(current->charListSorted));
     setGraph(out, current, i);
   }
   return out;
@@ -250,12 +265,11 @@ void collapseVerts(intList2D * verts, intList * dest, int n){
     If it returns true, clean up and return true.
     If false, check next permutation.
 */
-bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h, isoCheckMemBlock * memBlock){
+bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, Graph * h,  isoCheckMemBlock * memBlock){
   //printf("depth = %d / %d\n", depth, g->n-1);
   //if (h->isNull) return true;
   if(depth >= g->n-1){
     collapseVerts(vertsG, memBlock->collapseVertsG, g->n);
-    collapseVerts(vertsH, memBlock->collapseVertsH, h->n);
     for(int i = 0; i < g->n-1; i++){
       for(int j = i + 1; j < g->n; j++){
         if(getEdgeColor(g, getIntListIndex(memBlock->collapseVertsG, i), getIntListIndex(memBlock->collapseVertsG, j))
@@ -275,7 +289,7 @@ bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, G
       }
       return false;
     }else{
-      return recIsoCheck(vertsG, vertsH, depth + 1, g, h, memBlock);
+      return recIsoCheck(vertsG, vertsH, g->n, g, h, memBlock);
     }
   }
 }
@@ -284,7 +298,7 @@ bool recIsoCheck(intList2D * vertsG, intList2D * vertsH, int depth, Graph * g, G
   Simple function used by qsort
 */
 int cmpfunc (const void * a, const void * b){
-   return ( *(char*)a - *(char*)b );
+   return ( *(int*)a - *(int*)b );
 }
 
 /*
@@ -311,10 +325,12 @@ bool isColorIso(Graph * g, Graph * h, isoCheckMemBlock * memBlock){
       memBlock->vertsH->arrays[i]->length = 0;
       memBlock->origVertsG->arrays[i]->length = 0;
     }
-/*
+
+    //char lists can contain n arbitrary numbers, so we need to map them to 0 - n
+
     intList * c = copyIntList(charListG);
     intList * c2 = copyIntList(charListH);
-    int k = 1;
+    int k = 0;
     for(int i = 0; i < n; i++){
       int x = getIntListIndex(c, i);
       if(x > k){
@@ -330,17 +346,32 @@ bool isColorIso(Graph * g, Graph * h, isoCheckMemBlock * memBlock){
         k++;
       }
     }
-*/
+    /*printf("------\n");
+    printIntList(charListG);
+    printIntList(charListH);
+    printIntList(c);
+    printIntList(c2*/
+
     for(int i = 0 ; i < n; i++){
-      setIntListIndex(memBlock->vertsG->arrays[charListG->values[i]], memBlock->vertsG->arrays[charListG->values[i]]->length, i);
-      (memBlock->vertsG->arrays[charListG->values[i]]->length)++;
-      setIntListIndex(memBlock->origVertsG->arrays[charListG->values[i]], memBlock->origVertsG->arrays[charListG->values[i]]->length, i);
-      (memBlock->origVertsG->arrays[charListG->values[i]]->length)++;
-      setIntListIndex(memBlock->vertsH->arrays[charListH->values[i]], memBlock->vertsH->arrays[charListH->values[i]]->length, i);
-      (memBlock->vertsH->arrays[charListH->values[i]]->length)++;
+      setIntListIndex(memBlock->vertsG->arrays[c->values[i]], memBlock->vertsG->arrays[c->values[i]]->length, i);
+      (memBlock->vertsG->arrays[c->values[i]]->length)++;
+      //printf("a%d\n", i);
+      setIntListIndex(memBlock->origVertsG->arrays[c->values[i]], memBlock->origVertsG->arrays[c->values[i]]->length, i);
+      (memBlock->origVertsG->arrays[c->values[i]]->length)++;
+      //printf(" b\n");
+      setIntListIndex(memBlock->vertsH->arrays[c2->values[i]], memBlock->vertsH->arrays[c2->values[i]]->length, i);
+      (memBlock->vertsH->arrays[c2->values[i]]->length)++;
+      //printf("  c\n");
     }
 
+    collapseVerts(memBlock->vertsH, memBlock->collapseVertsH, h->n);
+
+  //  printf("made 2d verts\n");
+
     bool ans = recIsoCheck(memBlock->vertsG, memBlock->vertsH, 0, g, h, memBlock);
+    //printf("got answer\n");
+    freeIntList(c);
+    freeIntList(c2);
     return ans;
   }else{
     return false;
@@ -455,6 +486,7 @@ void * MTSlicesThread(void * rawArgs){
 	pthread_mutex_lock(args->validatedMutex);
 	if(*args->validated < args->blockSize){
 		(*args->validated)++;
+    (*args->deleted)++;
 		validRoom = true;
 	}
 	pthread_mutex_unlock(args->validatedMutex);
@@ -468,7 +500,7 @@ void * MTSlicesThread(void * rawArgs){
 			//identify chunk bounds, chunkStart, current, chunkEnd
 			chunkStart = current;
 			chunkEnd = chunkStart;
-      args->charListStr = getIntListStr(getGraph(args->gL, chunkStart)->charListSorted);
+      args->charListStr = getIntListStrNorm(getGraph(args->gL, chunkStart)->charListSorted);
 			while(chunkEnd + 1 < args->numGraphs && !cmpGraphsWL(args->gL, chunkStart, chunkEnd)){
 				chunkEnd++;
 			}
@@ -488,7 +520,7 @@ void * MTSlicesThread(void * rawArgs){
 				Graph * other = getGraph(args->gL, i);
 				if(!other->isNull && isColorIso(g, other, memBlock)){
 					other->isNull = true;
-					(*args->deleted)++;
+
           //printf("%d\n\n\n\n\n\n\n\n\n\n\n", (*args->deleted));
 				}
 			}
@@ -513,6 +545,7 @@ void * MTSlicesThread(void * rawArgs){
 
 		if(*args->validated < args->blockSize){
 			(*args->validated)++;
+      (*args->deleted)++;
 			validRoom = true;
 		}else{
 			validRoom = false;
@@ -529,7 +562,7 @@ void * MTSlicesThread(void * rawArgs){
 				chunkStart = current;
 				chunkEnd = chunkStart + 1;
         free(args->charListStr);
-        args->charListStr = getIntListStr(getGraph(args->gL, chunkStart)->charListSorted);
+        args->charListStr = getIntListStrNorm(getGraph(args->gL, chunkStart)->charListSorted);
 				while(!cmpGraphsWL(args->gL, chunkStart, chunkEnd)){
 					chunkEnd++;
 				}
@@ -539,7 +572,11 @@ void * MTSlicesThread(void * rawArgs){
 
 	}
   //printf("thread stopped\n");
+  pthread_mutex_lock(args->totalActiveMutex);
+  (*args->totalActive)--;
+  pthread_mutex_unlock(args->totalActiveMutex);
   *args->isActive = 0;
+  //printf("%d\n", *args->isActive);
   freeIsoCheckMemBlock(memBlock);
   //free(args);
 }
@@ -608,7 +645,15 @@ int graphPPPComparator(const void * g, const void * h){
   }else if(!g1->isValidated && h1->isValidated){
     return 1;
   }else{
-    return memcmp(gCharList->values, hCharList->values, gCharList->length * sizeof * gCharList->values);
+
+    if(g1->complexityClass > h1->complexityClass){
+      return -1;
+    }else if (g1->complexityClass < h1->complexityClass){
+      return 1;
+    }else{
+      return memcmp(gCharList->values, hCharList->values, gCharList->length * sizeof * gCharList->values);
+    }
+
   }
 
 }
@@ -851,7 +896,7 @@ void cleanST(GraphList * gL, int n, int m, bool isMajor){
   //has to check every graph with every other graph
   //but the first one invalidates a lot of others, so not quite n^2
   //printf("Starting on color Isos...\n");
-  int blockSize = 1000;
+  int blockSize = 5000;
 
   int activeIndex = gL->activeIndex;
   int blockID = 0;
@@ -863,6 +908,8 @@ void cleanST(GraphList * gL, int n, int m, bool isMajor){
   if(numGraphs > 0){
     memBlock = getIsoCheckMemBlock(getGraph(gL, 0)->n);
   }
+  sortGraphList(gL);
+  Graph * current = getGraph(gL, activeIndex);
 
   while (i < numGraphs){
     //checks a block
@@ -982,10 +1029,10 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
   //but the first one invalidates a lot of others, so not quite n^2
   struct timespec ts;
   ts.tv_sec = 0;
-  ts.tv_nsec = 200000000L;
+  ts.tv_nsec = 100000000L;
 
   //printf("Starting on color Isos...\n");
-  int blockSize = 5000;
+  int blockSize = 10000000;
 
   int activeIndex = gL->activeIndex;
   int blockID = 0;
@@ -1016,6 +1063,7 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
 	      current = getGraph(gL, i);
 	    }
 	  }
+    //printf("stack size: %d\n", stack->list->length);
     //printf("stack populated\n");
     //checks a block
     int j = 0;
@@ -1023,9 +1071,12 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
     int validated = 0;
     pthread_mutex_t * validatedMutex = malloc(sizeof * validatedMutex);
     pthread_mutex_init(validatedMutex, NULL);
-    MTSlicesArgs ** args = malloc(maxThreads * sizeof * args);
-    int actives[maxThreads];
 
+    pthread_mutex_t * totalActiveMutex = malloc(sizeof * totalActiveMutex);
+    pthread_mutex_init(totalActiveMutex, NULL);
+    MTSlicesArgs ** args = malloc(maxThreads * sizeof * args);
+    int totalActive = maxThreads;
+    int actives[maxThreads];
 
     for (int t = 0; t < maxThreads; t++){
       args[t] = malloc(sizeof * args[t]);
@@ -1042,27 +1093,40 @@ void cleanMTSlices(GraphList * gL, int n, int m, int maxThreads, bool isMajor){
       args[t]->chunkStack = stack;
       args[t]->isActive = &actives[t];
       actives[t] = 1;
+      args[t]->totalActiveMutex = totalActiveMutex;
+      args[t]->totalActive = & totalActive;
       pthread_create(&pids[t], NULL, MTSlicesThread, args[t]);
 
 
     }
-    int numActive = sumArray(actives, maxThreads);
+    //int numActive = sumArray(actives, maxThreads);
     //printf("%d active\n", numActive);
-    while(validated < blockSize && isMajor && validated + activeIndex < numGraphs && numActive > 0){
+    while(/*validated < blockSize && */isMajor /*&& validated + activeIndex < numGraphs*/ && totalActive > 0){
       int tot = sumArray(deleted, maxThreads);
-      numActive = sumArray(actives, maxThreads);
+      //numActive = sumArray(actives, maxThreads);
+      //printf("%d active\n", numActive);
       //printf("j = %d\n", j);
       time_t now = time(0);
       int delta = (now - then);
-        printf("Thread    Chunk  Length Current     G/s Active Characteristic List\n");
+        printf("Thread    Chunk  Length Current       G/s Active Characteristic List (Normalized)\n");
       for(int i = 0; i < maxThreads; i++){
-        printf("%6d %8d %7d %7d %7.3f      %d %s\n", args[i]->mod, args[i]->chunkStart, args[i]->chunkLength, args[i]->current - args[i]->chunkStart, 1.0* *args[i]->deleted/delta, *args[i]->isActive, args[i]->charListStr);
+        printf("%6d %8d %7d %7d %9.3f      %d %s\n", args[i]->mod, args[i]->chunkStart, args[i]->chunkLength, args[i]->current - args[i]->chunkStart, 1.0* *args[i]->deleted/delta, *args[i]->isActive, args[i]->charListStr);
       }
-      printf("%d %3.1f%% done with block %d, %d / %d or %3.1f%% total, averaging %3.6f g/s (%3.2f / t), total of %d gs over %02d:%02d:%02d used %.3f KB\n",
-      stack->list->length, (100.0 * validated) / blockSize, blockID, activeIndex, numGraphs, 100.0 * activeIndex/numGraphs,
-      (tot)*1.0/delta, (tot)*1.0/delta/maxThreads, tot, delta/3600, (delta/60)%60, delta%60, getMallInfo()/1000.0);
+      printf("Chunk Stack Size:             %d\n", stack->list->length);
 
-      for(int i = 0; i < maxThreads + 1; i++){
+      printf("Block Progress:               %d\n", validated);
+      printf("Block Size:                   %d\n", blockSize);
+      printf("Total Validated:              %d\n", activeIndex);
+      printf("Current Block:                %d\n", blockID);
+      printf("Total Graphs in Current File: %d\n", numGraphs);
+      printf("Average Speed (per thread):   %6.3f (%6.3f)\n", (validated)*1.0/delta, (validated)*1.0/delta/maxThreads);
+      printf("Time Elapsed:                 %02d:%02d:%02d\n", delta/3600, (delta/60)%60, delta%60);
+      printf("Memory Usage:                 %.3f KB\n", getMallInfo()/1000.0);
+      /*printf("%d %3.1f%% done with block %d, %d / %d or %3.1f%% total, averaging %3.6f g/s (%3.2f / t), total of %d gs over %02d:%02d:%02d used %.3f KB\n",
+      stack->list->length, (100.0 * validated) / blockSize, blockID, activeIndex, numGraphs, 100.0 * activeIndex/numGraphs,
+      (tot)*1.0/delta, (tot)*1.0/delta/maxThreads, tot, delta/3600, (delta/60)%60, delta%60, getMallInfo()/1000.0);*/
+      //printf("%d\n", totalActive);
+      for(int i = 0; i < maxThreads + 1 +8; i++){
         printf("\033[F");
       }
       printf("\033[F\033[J");

@@ -18,31 +18,42 @@
  */
 #include "defs.h"
 
+//TODO append new validated graphs after old ones, don't write down all the old ones
 void dumpGraphList(GraphList * gL, int n, int m){
   if (gL->size > 0){
     int numVertices = getGraph(gL, 0)->n;
     FILE * fp;
     char name[100];
+    //TODO adapt for relative paths for more portability
     sprintf(name, "/home/goirad/Documents/Ramsey-Theory/Graphs/K(%d, %d)/K(%d, %d) - %d.txt", n, m, n, m, numVertices);
-    fp = fopen(name, "w+");
+    fp = fopen(name, "w+"); //w+ discards previous replace with r+ and and fseek
     fprintf(fp, "%d\n%d\n", n, m);
     fprintf(fp, "%d\n", numVertices);
     fprintf(fp, "%d\n", gL->size);
     fprintf(fp, "%d\n", gL->activeIndex);
+    char buf[200];
+    char temp[10];
     for (int i = 0; i < gL->size; i++){
       Graph * g = getGraph(gL, i);
+
+      sprintf(buf, "\0");
       for (int j = 0; j < numVertices * (numVertices - 1)/2; j++){
-        fprintf(fp, "%d", getEdgeColorRaw(g, j));
+        sprintf(temp, "%d", getEdgeColorRaw(g, j));
+        strcat(buf, temp);
       }
-      fprintf(fp, "\n");
+      strcat(buf, "\n");
+      fprintf(fp, "%s", buf);
     }
     fclose(fp);
   }
 }
 
-GraphList * readGraphList(FILE * fp){
-  char buff[255];
 
+
+//TODO only read in non-validated graphs, look to fseek
+GraphList * readGraphList(FILE * fp){
+  char buff[255]; //holds 1 line
+  //metadata
   fgets(buff, 255, fp);
   int n = atoi(buff);
 
@@ -57,10 +68,9 @@ GraphList * readGraphList(FILE * fp){
 
   fgets(buff, 255, fp);
   int activeIndex = atoi(buff);
-
+  //graphs
   GraphList * gL = newGraphList(numGraphs);
   //printf("reading graphs\n");
-  //TODO validate graphs
   for(int i = 0; i < numGraphs; i++){
     fgets(buff, 255, fp);
     Graph * g = newGraph(numVertices, buff);

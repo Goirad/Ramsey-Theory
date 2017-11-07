@@ -12,10 +12,50 @@ intList * newIntList(int n){
 	return list;
 }
 
+char * getIntListStrNorm(intList * list){
+
+  intList * c = copyIntList(list);
+  int k = 0;
+  for(int i = 0; i < list->length; i++){
+    int x = getIntListIndex(c, i);
+    if(x > k){
+      for(int j = 0; j < list->length; j++){
+        if(getIntListIndex(c, j) == x){
+          setIntListIndex(c, j, k);
+        }
+      }
+      k++;
+    }
+  }
+
+  char * ans = getIntListStr(c);
+  freeIntList(c);
+  return ans;
+}
+
+int intListMin(intList * list){
+  int x = 1000;
+  for(int i = 0; i < list->length; i++){
+    if (getIntListIndex(list, i) < x) x = getIntListIndex(list, i);
+  }
+  return x;
+}
+int intListMinIndex(intList * list){
+  int x = 1000;
+  int index = -1;
+  for(int i = 0; i < list->length; i++){
+    if (getIntListIndex(list, i) < x) {
+      x = getIntListIndex(list, i);
+      index = i;
+    }
+  }
+  return index;
+}
+
 char * getIntListStr(intList * list){
-  char * ans = malloc(sizeof *ans * (1 + 3 * list->length + 2));
+  char * ans = malloc(200);
   strcat(ans, "[");
-  char * buf = malloc(50);
+  char * buf = malloc(200);
 
   for(int i = 0; i < list->length - 1; i++){
     sprintf(buf, "%d, ", getIntListIndex(list, i));
@@ -114,15 +154,16 @@ void addToIntList(intList * list, int val){
 */
 intList * copyIntList(intList * list){
   intList * copy = malloc(sizeof * copy);
-  copy->length = 0;
-
   //if list has stuff, copy them
   if(list->length > 0){
 		copy->length = list->length;
-    copy->values = malloc(list->length * sizeof * copy->values);
-    memcpy(copy->values, list->values, list->length * sizeof * list->values);
+    copy->size = list->size;
+    copy->values = malloc(copy->size * sizeof * copy->values);
+    memcpy(copy->values, list->values, list->size * sizeof * list->values);
     return copy;
   }else{
+    copy->length = 0;
+    copy->size = 0;
     return copy;
   }
 }
@@ -185,6 +226,7 @@ int getNthNonNegValue(intList * list, int n){
       return getIntListIndex(list, i);
     }
   }
+  return -1;
 }
 
 /*
